@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+{% block title %}Setup - JIVAPMS{% endblock %}
+{% block content %}
+<h2>First-time Setup</h2>
+<div class="mb-3">
+  <span class="badge bg-{% if status.health_ok %}success{% else %}danger{% endif %}">
+    Health: {% if status.health_ok %}OK{% else %}Error{% endif %}
+  </span>
+  <span class="badge bg-{% if status.pending_migrations %}warning{% else %}success{% endif %}">
+    Migrations: {% if status.pending_migrations %}Pending{% else %}Up to date{% endif %}
+  </span>
+  <span class="badge bg-{% if status.superuser_exists %}success{% else %}secondary{% endif %}">
+    Admin: {% if status.superuser_exists %}Exists{% else %}Missing{% endif %}
+  </span>
+</div>
+
+{% if not status.health_ok %}
+<div class="alert alert-danger">Database connection failed. Check settings.</div>
+{% endif %}
+
+{% if status.pending_migrations %}
+<form method="post" class="mb-4">
+  {% csrf_token %}
+  <input type="hidden" name="action" value="migrate" />
+  <button class="btn btn-warning" type="submit">Run Migrations</button>
+  {% if messages %}
+    {% for m in messages %}<div class="mt-2 alert alert-info">{{ m }}</div>{% endfor %}
+  {% endif %}
+</form>
+{% endif %}
+
+{% if not status.superuser_exists %}
+<div class="card">
+  <div class="card-body">
+    <h5 class="card-title">Create Admin Account</h5>
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="create_admin" />
+      <div class="mb-3">
+        <label class="form-label">Username</label>
+        <input class="form-control" name="username" required />
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Email</label>
+        <input class="form-control" name="email" type="email" required />
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Password</label>
+        <input class="form-control" name="password1" type="password" required />
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Confirm Password</label>
+        <input class="form-control" name="password2" type="password" required />
+      </div>
+      {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+      {% if info %}<div class="alert alert-success">{{ info }}</div>{% endif %}
+      <button class="btn btn-primary" type="submit">Create Admin</button>
+    </form>
+  </div>
+  </div>
+{% else %}
+<div class="alert alert-success mt-3">Admin account exists.</div>
+{% endif %}
+
+{% endblock %}
