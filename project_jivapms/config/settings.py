@@ -24,6 +24,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     # local apps
     'apps.app_0.apps.App0Config',
+    'apps.app_admin.apps.AppAdminConfig',
 ]
 
 MIDDLEWARE = [
@@ -88,3 +89,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 APPS_PARENT = PROJECT_ROOT  # contains 'apps/'
 if str(APPS_PARENT) not in sys.path:
     sys.path.insert(0, str(APPS_PARENT))
+
+# Auth
+LOGIN_URL = '/admin/login/'

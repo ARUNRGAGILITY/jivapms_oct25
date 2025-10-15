@@ -1,10 +1,10 @@
 {% extends 'base.html' %}
-{% block title %}Home - JIVAPMS{% endblock %}
+{% block title %}Home - {{ SITE_NAME }}{% endblock %}
 {% block content %}
-<div class="p-5 mb-4 bg-light rounded-3">
-  <div class="container-fluid py-5">
-    <h1 class="display-5 fw-bold">Welcome to JIVAPMS</h1>
-    <p class="col-md-8 fs-4">Product and Project Management System</p>
+<div class="p-5 mb-4 rounded-3 bg-body-tertiary border shadow-sm">
+  <div class="container py-5">
+    <h1 class="display-5 fw-bold text-body">Welcome to {{ SITE_NAME }}</h1>
+    <p class="col-md-8 fs-5 text-body-secondary">{{ SITE_TAGLINE }}</p>
   </div>
 </div>
 {% endblock %}

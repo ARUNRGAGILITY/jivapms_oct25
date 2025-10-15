@@ -1,0 +1,15 @@
+#!/bin/bash
+
+# gitx 
+# Check if a project name is provided
+if [ -z "$1" ]; then
+    echo "Usage: gitx <comments>"
+    exit 1
+fi
+comments="$1"
+git status
+git add -A
+git status
+git commit -m "$comments"
+git push
+git status

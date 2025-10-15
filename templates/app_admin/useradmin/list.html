@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% block title %}User Admin - {{ SITE_NAME }}{% endblock %}
+{% block content %}
+<div class="card border-0 shadow-sm">
+  <div class="card-header bg-body-tertiary d-flex justify-content-between align-items-center">
+    <h1 class="h5 mb-0">Users</h1>
+    <div class="btn-group">
+      <a class="btn btn-primary" href="{% url 'useradmin_create' %}">+ Add User</a>
+      <a class="btn btn-outline-secondary" href="{% url 'useradmin_bulk' %}">⇪ Bulk Upload</a>
+    </div>
+  </div>
+  <div class="card-body">
+    <form class="mb-3" method="get">
+      <div class="row g-2 align-items-center">
+        <div class="col-sm-8 col-md-9"><input class="form-control" name="q" value="{{ q }}" placeholder="Search username, name, or email"/></div>
+        <div class="col-sm-4 col-md-3 text-sm-end"><button class="btn btn-outline-secondary w-100" type="submit">Search</button></div>
+      </div>
+    </form>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead class="table-light">
+          <tr>
+            <th>Username</th>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Status</th>
+            <th class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for u in users %}
+          <tr>
+            <td class="fw-medium">{{ u.username }}</td>
+            <td>{{ u.first_name }} {{ u.last_name }}</td>
+            <td class="text-muted">{{ u.email }}</td>
+            <td>
+              {% if u.is_active %}<span class="badge text-bg-success">Active</span>{% else %}<span class="badge text-bg-secondary">Inactive</span>{% endif %}
+              {% if u.is_staff %}<span class="badge text-bg-info ms-1">Staff</span>{% endif %}
+            </td>
+            <td class="text-end">
+              <a class="btn btn-sm btn-outline-primary" href="{% url 'useradmin_edit' u.id %}">Edit</a>
+              <form method="post" action="{% url 'useradmin_delete' u.id %}" class="d-inline">{% csrf_token %}
+                <button class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete user {{ u.username }}?')">Delete</button>
+              </form>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" class="text-muted">No users found.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

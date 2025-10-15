@@ -20,6 +20,18 @@ def index(request):
     return render(request, 'index.html')
 
 
+def privacy(request):
+    return render(request, 'app_0/privacy.html')
+
+
+def terms(request):
+    return render(request, 'app_0/terms.html')
+
+
+def about(request):
+    return render(request, 'app_0/about.html')
+
+
 @require_http_methods(["GET", "POST"])
 @csrf_protect
 def setup(request):

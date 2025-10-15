@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block title %}About - {{ SITE_NAME }}{% endblock %}
+{% block content %}
+<h1>About {{ SITE_NAME }}</h1>
+<p class="text-muted">Last updated: {% now 'F j, Y' %}</p>
+<p>{{ SITE_TAGLINE }}</p>
+
+<h2>What is {{ SITE_NAME }}?</h2>
+<p>{{ SITE_NAME }} is a product and project management system designed to help teams plan, prioritize, and deliver work efficiently.</p>
+
+<h2>Key features</h2>
+<ul>
+	<li>Backlogs, sprints, and roadmaps.</li>
+	<li>Flexible boards and workflows.</li>
+	<li>Metrics and insights.</li>
+	<li>Permissions and roles.</li>
+</ul>
+
+<h2>Contact</h2>
+<p>For support or inquiries, contact the site administrator.</p>
+{% endblock %}

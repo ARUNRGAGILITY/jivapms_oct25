@@ -1,0 +1,24 @@
+{% load static %}
+<footer class="container py-4 border-top mt-5 small d-flex flex-wrap gap-3 align-items-center justify-content-between">
+  <div>
+    &copy; {% now 'Y' %} {{ SITE_NAME }}. All rights reserved.
+    <span class="text-muted ms-2">v{{ BUILD_VERSION }}{% if BUILD_DATE %} ({{ BUILD_DATE }}){% endif %}</span>
+  </div>
+  <ul class="nav">
+    <li class="nav-item"><a class="nav-link px-2" href="/privacy/">Privacy Policy</a></li>
+    <li class="nav-item"><a class="nav-link px-2" href="/terms/">Terms</a></li>
+    <li class="nav-item"><a class="nav-link px-2" href="/about/">About</a></li>
+    <li class="nav-item dropdown dropup">
+      <a class="nav-link px-2 dropdown-toggle" href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">Admin</a>
+      <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="adminDropdown">
+        <li><a class="dropdown-item" href="/setup/">Setup</a></li>
+        <li><a class="dropdown-item" href="/health/">Health</a></li>
+        <li><hr class="dropdown-divider"></li>
+        <li><a class="dropdown-item" href="/admin/">Django Admin</a></li>
+        <li><a class="dropdown-item" href="/siteadmin/">Site Admin</a></li>
+        <li><a class="dropdown-item" href="/orgadmin/">Org Admin</a></li>
+        <li><a class="dropdown-item" href="/useradmin/">User Admin</a></li>
+      </ul>
+    </li>
+  </ul>
+</footer>

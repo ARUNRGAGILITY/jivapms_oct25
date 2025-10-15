@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% block title %}Terms of Service - {{ SITE_NAME }}{% endblock %}
+{% block content %}
+<h1>Terms of Service</h1>
+<p class="text-muted">Last updated: {% now 'F j, Y' %} • Version {{ BUILD_VERSION }}{% if BUILD_DATE %} ({{ BUILD_DATE }}){% endif %}</p>
+
+<h2>1. Acceptance of terms</h2>
+<p>By accessing or using {{ SITE_NAME }}, you agree to be bound by these Terms of Service and all applicable laws and regulations.</p>
+
+<h2>2. Accounts and responsibilities</h2>
+<ul>
+	<li>You are responsible for maintaining the confidentiality of your account and password.</li>
+	<li>You agree to provide accurate and complete information.</li>
+	<li>You must not use the service for unlawful or prohibited activities.</li>
+</ul>
+
+<h2>3. Use of the service</h2>
+<ul>
+	<li>We grant you a limited, non-exclusive, non-transferable license to use the service.</li>
+	<li>We may modify, suspend, or discontinue the service at any time.</li>
+</ul>
+
+<h2>4. Content</h2>
+<ul>
+	<li>You retain ownership of content you submit but grant us a license to host and process it as necessary to provide the service.</li>
+	<li>You are responsible for ensuring your content does not infringe any rights or laws.</li>
+</ul>
+
+<h2>5. Intellectual property</h2>
+<p>All trademarks, logos, and service marks displayed in the service are the property of their respective owners.</p>
+
+<h2>6. Disclaimers and limitation of liability</h2>
+<p>The service is provided "as is" without warranties of any kind. To the fullest extent permitted by law, we disclaim all liability arising from your use of the service.</p>
+
+<h2>7. Indemnification</h2>
+<p>You agree to indemnify and hold harmless the operators of {{ SITE_NAME }} from any claims arising out of your use of the service or violation of these terms.</p>
+
+<h2>8. Termination</h2>
+<p>We may suspend or terminate access to the service immediately, without prior notice or liability, for any reason.</p>
+
+<h2>9. Governing law</h2>
+<p>These terms shall be governed by and construed in accordance with applicable laws. Venue and jurisdiction will be determined by the operators.</p>
+
+<h2>10. Changes to terms</h2>
+<p>We may revise these terms at any time by posting the updated version. Your continued use constitutes acceptance of the changes.</p>
+
+<h2>11. Contact</h2>
+<p>For questions about these terms, contact the site administrator.</p>
+{% endblock %}

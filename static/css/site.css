@@ -1,0 +1,24 @@
+/* Layout helpers */
+main.container { min-height: 60vh; }
+
+/* Sticky navbar visual polish (shadow added via JS) */
+.navbar.shadow-sm { transition: box-shadow 0.2s ease-in-out; }
+
+/* Hero block theming tweaks */
+.bg-body-tertiary { background-clip: padding-box; }
+/* helpers */
+.card-header h1.h5, .card-header h1.h6, .card-header .h5, .card-header .h6 { margin: 0; }
+.table td, .table th { vertical-align: middle; }
+.form-check .form-check-input { margin-right: .5rem; }
+.shadow-sm { box-shadow: 0 .125rem .25rem rgba(0,0,0,.075)!important; }
+
+@media (prefers-color-scheme: dark) {
+	[data-bs-theme="dark"] .text-body { color: var(--bs-body-color) !important; }
+	[data-bs-theme="dark"] .text-body-secondary { color: var(--bs-secondary-color) !important; }
+}
+
+/* Forms & layout helpers */
+.form-control.font-monospace { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+textarea.form-control { min-height: 12rem; }
+@media (min-width: 576px) { textarea.form-control { min-height: 16rem; } }
+.breadcrumb { --bs-breadcrumb-divider: ">"; }
