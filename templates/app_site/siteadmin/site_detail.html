@@ -1,0 +1,311 @@
+{% extends 'base.html' %}
+{% block title %}{{ site.name }} - {{ SITE_NAME }}{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="/">Home</a></li>
+    <li class="breadcrumb-item"><a href="/siteadmin/">Sites</a></li>
+    <li class="breadcrumb-item active" aria-current="page">{{ site.name }}</li>
+  </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h4 m-0"><i class="fa-solid fa-earth-americas me-2"></i>{{ site.name }}</h1>
+  <div class="btn-group">
+  <button class="btn btn-outline-secondary" data-modal-url="{% url 'siteadmin_site_modal' site.id %}"><i class="fa-regular fa-pen-to-square"></i> Edit</button>
+  <button class="btn btn-primary" data-modal-url="{% url 'siteadmin_membership_new_modal' site.id %}?role_code=member"><i class="fa-solid fa-user-plus"></i> Add membership</button>
+  </div>
+</div>
+
+<ul class="nav nav-tabs" role="tablist">
+  <li class="nav-item" role="presentation">
+    <a class="nav-link {% if active_tab == 'overview' %}active{% endif %}" href="?tab=overview" role="tab"><i class="fa-solid fa-gauge me-1"></i> Overview</a>
+  </li>
+  <li class="nav-item" role="presentation">
+    <a class="nav-link {% if active_tab == 'members' %}active{% endif %}" href="?tab=members" role="tab"><i class="fa-solid fa-users me-1"></i> Members</a>
+  </li>
+  <li class="nav-item" role="presentation">
+    <a class="nav-link {% if active_tab == 'organizations' %}active{% endif %}" href="?tab=organizations" role="tab"><i class="fa-solid fa-diagram-project me-1"></i> Organizations</a>
+  </li>
+</ul>
+
+<div class="tab-content pt-3">
+  <div class="tab-pane fade {% if active_tab == 'overview' %}show active{% endif %}" id="overview" role="tabpanel">
+    <div class="row g-3">
+      <div class="col-lg-6">
+        <div class="card shadow-sm h-100">
+          <div class="card-header bg-body-tertiary d-flex justify-content-between align-items-center">
+            <strong>Overview</strong>
+            <button class="btn btn-sm btn-outline-secondary" data-modal-url="{% url 'siteadmin_site_modal' site.id %}"><i class="fa-regular fa-pen-to-square"></i> Edit site</button>
+          </div>
+          <div class="card-body">
+            {% with desc=site.description|default:'' %}
+              <p class="text-muted">{% if desc %}{{ desc|truncatechars:120 }}{% else %}No description.{% endif %}</p>
+            {% endwith %}
+            <div class="d-flex gap-3 small">
+              <span><i class="fa-solid fa-diagram-project me-1"></i> {{ orgs|length }} organizations</span>
+              <span><i class="fa-solid fa-users me-1"></i> {{ members|length }} memberships</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-6">
+        <div class="card shadow-sm h-100">
+          <div class="card-header bg-body-tertiary d-flex justify-content-between align-items-center">
+            <strong>Site admins</strong>
+            <button class="btn btn-sm btn-outline-primary" data-modal-url="{% url 'siteadmin_membership_new_modal' site.id %}?role_code=siteadmin"><i class="fa-solid fa-user-plus me-1"></i> Assign admin</button>
+          </div>
+          <div class="card-body">
+            {% if admins %}
+              <ul class="list-unstyled m-0">
+                {% for u in admins %}
+                  <li><i class="fa-regular fa-circle-user me-1"></i> {{ u.username }} ({{ u.email }})</li>
+                {% endfor %}
+              </ul>
+            {% else %}
+              <div class="text-warning"><i class="fa-solid fa-triangle-exclamation me-1"></i> No site admin assigned</div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-pane fade {% if active_tab == 'members' %}show active{% endif %}" id="members" role="tabpanel">
+    <div class="d-flex justify-content-end mb-2">
+  <button class="btn btn-primary" data-modal-url="{% url 'siteadmin_membership_new_modal' site.id %}"><i class="fa-solid fa-user-plus me-1"></i> Add membership</button>
+    </div>
+    <div class="card shadow-sm">
+      <div class="card-body">
+        {% if members %}
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead class="table-light"><tr>
+              <th>User</th><th>Role</th><th>Organization</th><th style="width:10rem;" class="text-end">Actions</th>
+            </tr></thead>
+            <tbody>
+              {% for m in members %}
+                <tr>
+                  <td><i class="fa-regular fa-circle-user me-1"></i> {{ m.user.username }}</td>
+                  <td>{% if m.role.code == 'siteadmin' %}<span class="badge text-bg-danger">Site Admin</span>{% elif m.role.code == 'orgadmin' %}<span class="badge text-bg-primary">Org Admin</span>{% else %}<span class="badge text-bg-secondary">{{ m.role.label }}</span>{% endif %}</td>
+                  <td>{% if m.organization %}{{ m.organization.name }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
+                  <td class="text-end">
+                    <div class="btn-group btn-group-sm" role="group">
+                      <a href="#" class="btn btn-outline-secondary" data-modal-url="{% url 'siteadmin_membership_edit_modal' site.id m.id %}" title="Edit"><i class="fa-regular fa-pen-to-square"></i></a>
+                      <button type="button" class="btn btn-outline-danger js-mem-delete-one" data-id="{{ m.id }}" title="Delete"><i class="fa-regular fa-trash-can"></i></button>
+                    </div>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <script>
+          (function(){
+            document.querySelectorAll('.js-mem-delete-one').forEach(btn => {
+              btn.addEventListener('click', async ()=>{
+                const id = btn.getAttribute('data-id');
+                const ok = await window.confirmDialog({title:'Delete membership', body:'Soft delete this membership?', confirmText:'Delete', confirmClass:'btn-danger'});
+                if (!ok) return;
+                const url = `{% url 'siteadmin_membership_delete' site.id 0 %}`.replace('/0/', `/${id}/`);
+                await fetch(url, {method:'POST', headers:{'X-Requested-With':'XMLHttpRequest','X-CSRFToken': window.getCsrf()}});
+                // Reload keeping active tab
+                const params = new URLSearchParams(window.location.search);
+                params.set('tab','members');
+                window.location.href = window.location.pathname + '?' + params.toString();
+              });
+            });
+          })();
+        </script>
+        {% else %}
+          <div class="text-muted">No members yet.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-pane fade {% if active_tab == 'organizations' %}show active{% endif %}" id="organizations" role="tabpanel">
+    <div class="d-flex justify-content-end gap-2 mb-2">
+      <button type="button" id="toggleOrgRecycleBin" class="btn btn-outline-secondary btn-sm" title="Recycle Bin" {% if not orgs_deleted_count %}disabled{% endif %}>
+        <i class="fa-regular fa-trash-can"></i>
+        {% if orgs_deleted_count %}<span class="badge text-bg-secondary ms-1">{{ orgs_deleted_count }}</span>{% endif %}
+      </button>
+      <button class="btn btn-outline-primary" data-modal-url="{% url 'siteadmin_org_new_modal' site.id %}"><i class="fa-solid fa-building-user me-1"></i> Add organization</button>
+    </div>
+    <div class="card shadow-sm">
+      <div class="card-body p-0">
+        {% if orgs %}
+          <form id="orgTableForm" method="post" class="{% if org_show_bin %}d-none{% endif %}">
+            {% csrf_token %}
+            <div class="d-flex justify-content-between align-items-center p-2 border-bottom bg-body-tertiary">
+              <div></div>
+              <div class="d-flex gap-2">
+                <button type="button" id="orgBulkDeleteBtn" class="btn btn-outline-danger btn-sm"><i class="fa-regular fa-trash-can me-1"></i> Bulk delete</button>
+              </div>
+            </div>
+            <div class="table-responsive">
+              <table class="table table-hover align-middle m-0">
+                <thead class="table-light">
+                  <tr>
+                    <th style="width:2rem;"><input type="checkbox" id="selectAllOrgs" class="form-check-input js-select-all"/></th>
+                    <th style="width:3rem;">#</th>
+                    <th>Name</th>
+                    <th>Description</th>
+                    <th>Org admin(s)</th>
+                    <th style="width:12rem;" class="text-end">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for o in orgs %}
+                    <tr>
+                      <td><input type="checkbox" name="org_ids" value="{{ o.id }}" class="form-check-input row-check"/></td>
+                      <td>{{ forloop.counter }}</td>
+                      <td>
+                        <a href="{% url 'siteadmin_org_detail' site.id o.id %}" class="text-decoration-none"><i class="fa-solid fa-building-user me-1"></i> {{ o.name }}</a>
+                      </td>
+                      <td class="text-muted">{{ o.description|default:'—'|truncatechars:60 }}</td>
+                      <td>
+                        {% with admins=members|dictsort:"user__username" %}
+                          {% firstof '' '' %}
+                        {% endwith %}
+                        {% with has_admin=False %}{% endwith %}
+                        <ul class="list-unstyled m-0 small">
+                          {% for m in members %}
+                            {% if m.organization and m.organization.id == o.id and m.role.code == 'orgadmin' and m.active %}
+                              <li><i class="fa-regular fa-circle-user me-1"></i> {{ m.user.username }}</li>
+                            {% endif %}
+                          {% endfor %}
+                        </ul>
+                      </td>
+                      <td class="text-end">
+                        <div class="btn-group btn-group-sm" role="group">
+                          <button class="btn btn-outline-primary" data-modal-url="{% url 'siteadmin_membership_new_modal' site.id %}?role_code=orgadmin&org_id={{ o.id }}" title="Add org admin"><i class="fa-solid fa-user-shield"></i></button>
+                          <a href="#" class="btn btn-outline-secondary" data-modal-url="{% url 'siteadmin_org_edit_modal' site.id o.id %}" title="Edit"><i class="fa-regular fa-pen-to-square"></i></a>
+                          <button type="button" class="btn btn-outline-danger js-org-delete-one" data-id="{{ o.id }}" title="Delete"><i class="fa-regular fa-trash-can"></i></button>
+                        </div>
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </form>
+        {% else %}
+          <div class="p-3 text-muted {% if org_show_bin %}d-none{% endif %}">No organizations yet.</div>
+        {% endif %}
+      </div>
+    </div>
+    {% if orgs_deleted_count %}
+    <div id="orgRecycleBinPanel" class="card shadow-sm mt-3 {% if org_show_bin %}{% else %}d-none{% endif %}">
+      <div class="d-flex justify-content-between align-items-center p-2 border-bottom bg-body-tertiary">
+        <div class="fw-semibold"><i class="fa-solid fa-trash-can"></i> Recycle Bin</div>
+        <div class="d-flex gap-2">
+          <button type="button" id="orgRbRestoreBtn" class="btn btn-outline-success btn-sm"><i class="fa-solid fa-recycle me-1"></i> Restore selected</button>
+        </div>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle m-0">
+          <thead class="table-light">
+            <tr>
+              <th style="width:2rem;"><input type="checkbox" id="orgRbSelectAll" class="form-check-input js-select-all"></th>
+              <th style="width:3rem;">#</th>
+              <th>Name</th>
+              <th style="width:7rem;" class="text-end">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for o in orgs_deleted %}
+            <tr>
+              <td><input type="checkbox" class="form-check-input row-check org-rb-row" value="{{ o.id }}"></td>
+              <td>{{ forloop.counter }}</td>
+              <td class="text-muted">{{ o.name }}</td>
+              <td class="text-end">
+                <div class="btn-group btn-group-sm" role="group">
+                  <button type="button" class="btn btn-outline-success js-org-rb-restore-one" data-id="{{ o.id }}" title="Restore"><i class="fa-solid fa-recycle"></i></button>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endif %}
+    <script>
+      (function(){
+        document.querySelectorAll('.js-org-delete-one').forEach(btn => {
+          btn.addEventListener('click', async ()=>{
+            const id = btn.getAttribute('data-id');
+            const ok = await window.confirmDialog({title:'Delete organization', body:'Soft delete this organization?', confirmText:'Delete', confirmClass:'btn-danger'});
+            if (!ok) return;
+            const url = `{% url 'siteadmin_org_delete' site.id 0 %}`.replace('/0/', `/${id}/`);
+            await fetch(url, {method:'POST', headers:{'X-Requested-With':'XMLHttpRequest','X-CSRFToken': window.getCsrf()}});
+            window.location.reload();
+          });
+        });
+
+        // Toggle recycle bin
+        const toggleBtn = document.getElementById('toggleOrgRecycleBin');
+        if (toggleBtn){
+          toggleBtn.addEventListener('click', ()=>{
+            const params = new URLSearchParams(location.search);
+            params.set('tab','organizations');
+            const current = params.get('org_bin') === '1';
+            if (current) params.delete('org_bin'); else params.set('org_bin','1');
+            location.href = location.pathname + '?' + params.toString();
+          });
+        }
+
+        // Bulk delete
+        const orgForm = document.getElementById('orgTableForm');
+        const orgBulkDeleteBtn = document.getElementById('orgBulkDeleteBtn');
+        async function postJSON(url, fd){
+          const resp = await fetch(url, {method:'POST', headers:{'X-Requested-With':'XMLHttpRequest','X-CSRFToken': window.getCsrf()}, body: fd});
+          return resp.json();
+        }
+        if (orgForm && orgBulkDeleteBtn){
+          orgBulkDeleteBtn.addEventListener('click', async ()=>{
+            const ok = await window.confirmDialog({title:'Bulk delete', body:'Soft delete selected organizations?', confirmText:'Delete selected', confirmClass:'btn-danger'});
+            if (!ok) return;
+            const fd = new FormData(orgForm);
+            await postJSON('{% url "siteadmin_org_bulk_delete" site.id %}', fd);
+            const params = new URLSearchParams(location.search); params.set('tab','organizations');
+            location.href = location.pathname + '?' + params.toString();
+          });
+        }
+
+        // Recycle bin restore handlers
+        function selectedOrgRbIds(){
+          return Array.from(document.querySelectorAll('.org-rb-row:checked')).map(cb => cb.value);
+        }
+        const orgRbRestoreBtn = document.getElementById('orgRbRestoreBtn');
+        if (orgRbRestoreBtn){
+          orgRbRestoreBtn.addEventListener('click', async ()=>{
+            const ids = selectedOrgRbIds();
+            if (!ids.length) return;
+            const ok = await window.confirmDialog({title:'Restore', body:`Restore ${ids.length} organization(s)?`, confirmText:'Restore selected', confirmClass:'btn-success'});
+            if (!ok) return;
+            const fd = new FormData();
+            ids.forEach(id => fd.append('ids', id));
+            await fetch('{% url "siteadmin_org_bulk_restore" site.id %}', {method:'POST', headers:{'X-Requested-With':'XMLHttpRequest','X-CSRFToken': window.getCsrf()}, body: fd});
+            const params = new URLSearchParams(location.search); params.set('tab','organizations'); params.set('org_bin','1');
+            location.href = location.pathname + '?' + params.toString();
+          });
+        }
+        document.querySelectorAll('.js-org-rb-restore-one').forEach(btn => {
+          btn.addEventListener('click', async ()=>{
+            const id = btn.getAttribute('data-id');
+            const ok = await window.confirmDialog({title:'Restore organization', body:'Restore this organization?', confirmText:'Restore', confirmClass:'btn-success'});
+            if (!ok) return;
+            const url = `{% url 'siteadmin_org_restore' site.id 0 %}`.replace('/0/', `/${id}/`);
+            await fetch(url, {method:'POST', headers:{'X-Requested-With':'XMLHttpRequest','X-CSRFToken': window.getCsrf()}});
+            const params = new URLSearchParams(location.search); params.set('tab','organizations'); params.set('org_bin','1');
+            location.href = location.pathname + '?' + params.toString();
+          });
+        });
+      })();
+    </script>
+  </div>
+</div>
+<!-- Uses global modal/JS from base.html -->
+{% endblock %}

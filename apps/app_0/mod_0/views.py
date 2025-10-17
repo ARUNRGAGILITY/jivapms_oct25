@@ -32,6 +32,22 @@ def about(request):
     return render(request, 'app_0/about.html')
 
 
+def help_page(request):
+    order = ['getting-started', 'sites', 'organizations', 'memberships', 'cli']
+    section = request.GET.get('s', 'getting-started')
+    if section not in order:
+        section = 'getting-started'
+    idx = order.index(section)
+    prev_section = order[idx-1] if idx > 0 else ''
+    next_section = order[idx+1] if idx < len(order)-1 else ''
+    ctx = {
+        'section': section,
+        'prev_section': prev_section,
+        'next_section': next_section,
+    }
+    return render(request, 'help/index.html', ctx)
+
+
 @require_http_methods(["GET", "POST"])
 @csrf_protect
 def setup(request):

@@ -25,6 +25,7 @@ INSTALLED_APPS = [
     # local apps
     'apps.app_0.apps.App0Config',
     'apps.app_admin.apps.AppAdminConfig',
+    'apps.app_site.apps.AppSiteConfig',
 ]
 
 MIDDLEWARE = [
@@ -85,10 +86,10 @@ STATICFILES_DIRS = [PROJECT_ROOT / 'static']
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Make 'apps' importable via top-level
-APPS_PARENT = PROJECT_ROOT  # contains 'apps/'
-if str(APPS_PARENT) not in sys.path:
-    sys.path.insert(0, str(APPS_PARENT))
+# Make 'apps' and 'apis' importable via top-level
+TOP_LEVEL_DIR = PROJECT_ROOT  # contains 'apps/' and 'apis/'
+if str(TOP_LEVEL_DIR) not in sys.path:
+    sys.path.insert(0, str(TOP_LEVEL_DIR))
 
 # Auth
 LOGIN_URL = '/admin/login/'

@@ -1,0 +1,40 @@
+<form method="post" class="needs-validation" novalidate>
+  {% csrf_token %}
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <div class="d-flex align-items-center gap-2">
+      <label class="form-label m-0">User</label>
+      {{ form.user }}
+      <div class="form-check ms-2">
+        {{ form.active }} <label class="form-check-label">Active</label>
+      </div>
+    </div>
+    <div>
+      <button type="submit" class="btn btn-primary"><i class="fa-solid fa-user-shield me-1"></i> Add org admin</button>
+    </div>
+  </div>
+  <div class="table-responsive">
+    <table class="table align-middle">
+      <thead>
+        <tr>
+          <th style="width:2rem;">
+            <input type="checkbox" id="selectAll" class="form-check-input js-select-all"/>
+          </th>
+          <th style="width:3rem;">#</th>
+          <th>Organization</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for o in orgs %}
+          <tr>
+            <td><input type="checkbox" name="org_ids" value="{{ o.id }}" class="form-check-input row-check"/></td>
+            <td>{{ forloop.counter }}</td>
+            <td><i class="fa-solid fa-building-user me-1"></i> {{ o.name }}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="3" class="text-muted">No organizations.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <!-- Select-all handled by global delegated listener in base.html -->
+</form>

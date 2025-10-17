@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+{% block title %}Help - {{ SITE_NAME }}{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-md-3">
+    <nav class="list-group">
+      <a class="list-group-item list-group-item-action {% if section == 'getting-started' %}active{% endif %}" href="/help/?s=getting-started">Getting started</a>
+      <a class="list-group-item list-group-item-action {% if section == 'sites' %}active{% endif %}" href="/help/?s=sites">Sites</a>
+      <a class="list-group-item list-group-item-action {% if section == 'organizations' %}active{% endif %}" href="/help/?s=organizations">Organizations</a>
+      <a class="list-group-item list-group-item-action {% if section == 'memberships' %}active{% endif %}" href="/help/?s=memberships">Memberships & Roles</a>
+      <a class="list-group-item list-group-item-action {% if section == 'cli' %}active{% endif %}" href="/help/?s=cli">CLI & data load</a>
+    </nav>
+  </div>
+  <div class="col-md-9">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <div class="d-flex justify-content-between mb-3">
+          <a class="btn btn-outline-secondary" href="/help/?s={{ prev_section }}" {% if not prev_section %}tabindex="-1" aria-disabled="true"{% endif %}>← Previous</a>
+          <a class="btn btn-outline-secondary" href="/help/?s={{ next_section }}" {% if not next_section %}tabindex="-1" aria-disabled="true"{% endif %}>Next →</a>
+        </div>
+        {% if section == 'sites' %}
+          <h1 class="h4">Sites</h1>
+          <p>Sites are the top-level containers. Create a site, then assign a Site Admin at the site level (leave Organization empty).</p>
+          <ul>
+            <li>Open Site Admin and click “New Site” to create via modal.</li>
+            <li>Use “Assign admin” to grant the <em>siteadmin</em> role to a user.</li>
+          </ul>
+        {% elif section == 'organizations' %}
+          <h1 class="h4">Organizations</h1>
+          <p>Organizations live inside a Site. You can create multiple organizations per site.</p>
+          <ul>
+            <li>In Site detail → Organizations tab → “Add organization” (modal)</li>
+            <li>Use “Add org admin” to grant the <em>orgadmin</em> role within that organization.</li>
+          </ul>
+        {% elif section == 'memberships' %}
+          <h1 class="h4">Memberships & Roles</h1>
+          <p>Membership links a user to a Site and optionally an Organization with a role.</p>
+          <ul>
+            <li>Site-level admin: role=siteadmin, Organization left blank.</li>
+            <li>Org-level admin: role=orgadmin, select an Organization.</li>
+          </ul>
+        {% elif section == 'cli' %}
+          <h1 class="h4">CLI & data load</h1>
+          <p>Use the management command <code>bootstrap_site</code> to seed sites, orgs, and memberships from JSON.</p>
+          <pre class="bg-body-tertiary p-2 rounded small">python manage.py bootstrap_site seed.json --create-users --default-password Temp#123</pre>
+          <p>JSON keys supported: <code>site</code>, <code>organizations</code>, <code>memberships</code>.</p>
+        {% else %}
+          <h1 class="h4">Getting started</h1>
+          <p class="text-muted">About JIVAPMS: A Product and Project Management System for organizing work by Sites and Organizations with role-based access (Site Admin, Org Admin, Member).</p>
+          <ol class="mb-3">
+            <li>
+              Create an admin account (first-time setup)
+              <ul>
+                <li>On localhost, open <a href="/setup/">Setup</a> and run migrations if needed, then create the first superuser.</li>
+                <li>Sign in with that admin to continue.</li>
+              </ul>
+            </li>
+            <li>
+              Create one or more users who will act as Site Admins
+              <ul>
+                <li>Use <a href="/useradmin/">User Admin</a> to add users, or bulk import via CSV on the Bulk tab.</li>
+              </ul>
+            </li>
+            <li>
+              Create a Site
+              <ul>
+                <li>Go to <a href="/siteadmin/">Site Admin</a> and click <em>New Site</em> (modal).</li>
+              </ul>
+            </li>
+            <li>
+              Assign Site Admins to the Site
+              <ul>
+                <li>In the Site detail → Overview, click <em>Assign admin</em> (modal) and choose role <code>siteadmin</code> (leave Organization blank).</li>
+              </ul>
+            </li>
+            <li>
+              Create Organizations under the Site
+              <ul>
+                <li>In the Site detail → Organizations tab, click <em>Add organization</em> (modal).</li>
+              </ul>
+            </li>
+            <li>
+              Assign Org Admins
+              <ul>
+                <li>For each organization, click <em>Add org admin</em> (modal) and select role <code>orgadmin</code>.</li>
+              </ul>
+            </li>
+          </ol>
+          <p class="mb-0">Optional: seed everything from JSON using the CLI command on the <a href="/help/?s=cli">CLI & data load</a> section.</p>
+        {% endif %}
+
+        <div class="d-flex justify-content-between mt-4">
+          <a class="btn btn-outline-secondary" href="/help/?s={{ prev_section }}" {% if not prev_section %}tabindex="-1" aria-disabled="true"{% endif %}>← Previous</a>
+          <a class="btn btn-outline-secondary" href="/help/?s={{ next_section }}" {% if not next_section %}tabindex="-1" aria-disabled="true"{% endif %}>Next →</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

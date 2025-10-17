@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+{% block title %}{{ org.name }} - {{ SITE_NAME }}{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="/">Home</a></li>
+    <li class="breadcrumb-item"><a href="/siteadmin/">Sites</a></li>
+    <li class="breadcrumb-item"><a href="/siteadmin/{{ site.id }}/">{{ site.name }}</a></li>
+    <li class="breadcrumb-item active" aria-current="page">{{ org.name }}</li>
+  </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h4 m-0"><i class="fa-solid fa-building-user me-2"></i>{{ org.name }}</h1>
+  <div class="btn-group">
+    <button class="btn btn-outline-secondary" data-modal-url="{% url 'siteadmin_org_edit_modal' site.id org.id %}"><i class="fa-regular fa-pen-to-square"></i> Edit</button>
+    <button class="btn btn-primary" data-modal-url="{% url 'siteadmin_membership_new_modal' site.id %}?role_code=member&org_id={{ org.id }}"><i class="fa-solid fa-user-plus"></i> Add membership</button>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-6">
+    <div class="card shadow-sm h-100">
+      <div class="card-header bg-body-tertiary d-flex justify-content-between align-items-center">
+        <strong>Overview</strong>
+        <button class="btn btn-sm btn-outline-secondary" data-modal-url="{% url 'siteadmin_org_edit_modal' site.id org.id %}"><i class="fa-regular fa-pen-to-square"></i> Edit organization</button>
+      </div>
+      <div class="card-body">
+        {% with desc=org.description|default:'' %}
+          <p class="text-muted">{% if desc %}{{ desc|truncatechars:120 }}{% else %}No description.{% endif %}</p>
+        {% endwith %}
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card shadow-sm h-100">
+      <div class="card-header bg-body-tertiary d-flex justify-content-between align-items-center">
+        <strong>Org admins</strong>
+        <button class="btn btn-sm btn-outline-primary" data-modal-url="{% url 'siteadmin_membership_new_modal' site.id %}?role_code=orgadmin&org_id={{ org.id }}"><i class="fa-solid fa-user-shield me-1"></i> Assign admin</button>
+      </div>
+      <div class="card-body">
+        {% if admins %}
+          <ul class="list-unstyled m-0">
+            {% for u in admins %}
+            <li><i class="fa-regular fa-circle-user me-1"></i> {{ u.username }} ({{ u.email }})</li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <div class="text-warning"><i class="fa-solid fa-triangle-exclamation me-1"></i> No org admin assigned</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card shadow-sm mt-3">
+  <div class="card-header bg-body-tertiary d-flex justify-content-between align-items-center">
+    <strong>Members</strong>
+    <button class="btn btn-sm btn-primary" data-modal-url="{% url 'siteadmin_membership_new_modal' site.id %}?org_id={{ org.id }}"><i class="fa-solid fa-user-plus me-1"></i> Add</button>
+  </div>
+  <div class="card-body">
+    {% if members %}
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead class="table-light"><tr><th>User</th><th>Role</th></tr></thead>
+          <tbody>
+          {% for m in members %}
+            <tr>
+              <td><i class="fa-regular fa-circle-user me-1"></i> {{ m.user.username }}</td>
+              <td>{% if m.role.code == 'orgadmin' %}<span class="badge text-bg-primary">Org Admin</span>{% else %}<span class="badge text-bg-secondary">{{ m.role.label }}</span>{% endif %}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="text-muted">No members yet.</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

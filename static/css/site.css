@@ -1,3 +1,8 @@
+/* Site cards: keep description rows aligned */
+.site-card-desc {
+	min-height: 1.5rem; /* one line height to align cards */
+	overflow: hidden;
+}
 /* Layout helpers */
 main.container { min-height: 60vh; }
 

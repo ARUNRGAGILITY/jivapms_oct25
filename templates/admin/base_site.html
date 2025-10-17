@@ -1,0 +1,24 @@
+{% extends "admin/base.html" %}
+{% load i18n %}
+{% block title %}{{ site_title|default:_('Django site admin') }} | {{ SITE_NAME }}{% endblock %}
+{% block branding %}
+  <h1 id="site-name"><a href="/">{{ SITE_NAME }}</a></h1>
+{% endblock %}
+{% block nav-global %}
+  {{ block.super }}
+  <div class="admin-quick-links" style="margin-left:auto;">
+    <a href="/siteadmin/" style="margin-right:12px;">Site Admin</a>
+    <a href="/orgadmin/" style="margin-right:12px;">Org Admin</a>
+    <a href="/useradmin/">User Admin</a>
+  </div>
+{% endblock %}
+{% block footer %}
+  {{ block.super }}
+  <div style="padding:8px 16px;border-top:1px solid var(--hairline-color);display:flex;gap:12px;flex-wrap:wrap;">
+    <a href="/">Home</a>
+    <a href="/siteadmin/">Site Admin</a>
+    <a href="/orgadmin/">Org Admin</a>
+    <a href="/useradmin/">User Admin</a>
+    <a href="/help/">Help</a>
+  </div>
+{% endblock %}

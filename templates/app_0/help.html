@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% block title %}Help - {{ SITE_NAME }}{% endblock %}
+{% block content %}
+<div class="card border-0 shadow-sm">
+  <div class="card-header bg-body-tertiary"><h1 class="h5 m-0">How administration works</h1></div>
+  <div class="card-body">
+    <ol class="mb-4">
+      <li><strong>Create a Site</strong> (global container for your organizations).</li>
+      <li><strong>Create Organizations</strong> under a Site.</li>
+      <li><strong>Roles</strong> define capabilities, default ones are Site Admin, Org Admin, Member.</li>
+      <li><strong>Memberships</strong> link a User to a Site and optionally an Organization with a Role.</li>
+    </ol>
+    <p class="text-muted">Users can have multiple memberships across different sites/organizations/roles.</p>
+    <hr/>
+    <div class="row g-3">
+      <div class="col-md-6">
+        <div class="p-3 bg-body-tertiary rounded">
+          <div class="fw-semibold mb-2">Quick links</div>
+          <ul class="m-0">
+            <li><a href="/siteadmin/">Manage Sites</a></li>
+            <li><a href="/orgadmin/">Manage Organizations</a></li>
+            <li><a href="/admin/app_membership/membership/">Manage Memberships</a></li>
+            <li><a href="/admin/app_role/role/">Manage Roles</a></li>
+            <li><a href="/useradmin/">Manage Users</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="p-3 bg-body-tertiary rounded">
+          <div class="fw-semibold mb-2">Tips</div>
+          <ul class="m-0">
+            <li>Use Memberships to assign Site Admin at site level (leave Organization blank).</li>
+            <li>Assign Org Admin by choosing a specific Organization on the Membership.</li>
+            <li>Soft-delete is supported; use the <em>active</em> flag to disable entries.</li>
+            <li>UI quick start: go to Site Admin, click New Site, then Assign admin, then add Organizations and assign Org Admins via the modals.</li>
+            <li>CLI: use management command <code>bootstrap_site</code> with a JSON file to load sites, orgs and memberships for testing or production seeding.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

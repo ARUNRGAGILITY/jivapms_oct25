@@ -1,0 +1,321 @@
+{% extends 'base.html' %}
+{% block title %}Sites - {{ SITE_NAME }}{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb" class="mb-2">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="/">Home</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Sites</li>
+  </ol>
+  </nav>
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h4 m-0">Sites</h1>
+  <div class="d-flex align-items-center gap-2">
+    <div class="btn-group" role="group" aria-label="View toggle">
+      <a class="btn btn-outline-secondary btn-sm {% if view_mode == 'card' %}active{% endif %}" href="?view=card" title="Card view"><i class="fa-solid fa-grip"></i></a>
+      <a class="btn btn-outline-secondary btn-sm {% if view_mode == 'table' %}active{% endif %}" href="?view=table" title="Table view"><i class="fa-solid fa-table-list"></i></a>
+    </div>
+    <button type="button" id="toggleRecycleBin" class="btn btn-outline-secondary btn-sm" title="Recycle Bin" {% if not deleted_page or deleted_page.paginator.count == 0 %}disabled{% endif %}>
+      <i class="fa-regular fa-trash-can"></i>
+      {% if deleted_page and deleted_page.paginator.count > 0 %}<span class="badge text-bg-secondary ms-1">{{ deleted_page.paginator.count }}</span>{% endif %}
+    </button>
+  {% if request.user.is_staff or request.user.is_superuser %}
+  <a href="#" data-modal-url="{% url 'siteadmin_site_new_modal' %}" class="btn btn-primary"><i class="fa-solid fa-plus"></i> New Site</a>
+  {% endif %}
+  </div>
+</div>
+{% if view_mode == 'card' %}
+  {% if not show_bin %}
+  <div class="row g-3">
+    {% for item in items_page.object_list %}
+      <div class="col-md-6 col-lg-4">
+        <div class="card shadow-sm h-100">
+          <div class="card-body">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <h2 class="h5 m-0"><a class="link-underline link-underline-opacity-0" href="/siteadmin/{{ item.site.id }}/">{{ item.site.name }}</a></h2>
+              {% if request.user.is_staff or request.user.is_superuser %}
+              <a href="#" data-modal-url="{% url 'siteadmin_site_modal' item.site.id %}" class="btn btn-sm btn-outline-secondary"><i class="fa-regular fa-pen-to-square"></i></a>
+              {% endif %}
+            </div>
+            {% with desc=item.site.description|default:'' %}
+              <p class="text-muted mb-2 site-card-desc">{% if desc %}{{ desc|truncatechars:60 }}{% else %}&mdash;{% endif %}</p>
+            {% endwith %}
+            <div class="d-flex gap-3 small mb-3">
+              <span><i class="fa-solid fa-diagram-project me-1"></i> {{ item.org_count }} orgs</span>
+              <span><i class="fa-solid fa-users me-1"></i> {{ item.member_count }} members</span>
+            </div>
+            <div>
+              <div class="fw-semibold mb-1"><i class="fa-solid fa-user-shield me-1"></i> Site admins</div>
+              {% if item.admins %}
+                <ul class="list-unstyled m-0">
+                  {% for u in item.admins %}
+                    <li><i class="fa-regular fa-circle-user me-1"></i> {{ u.username }} ({{ u.email }})</li>
+                  {% endfor %}
+                </ul>
+              {% else %}
+                <div class="text-warning"><i class="fa-solid fa-triangle-exclamation me-1"></i> No site admin assigned</div>
+                {% if request.user.is_staff or request.user.is_superuser %}
+                  <a href="#" data-modal-url="{% url 'siteadmin_membership_new_modal' item.site.id %}?role_code=siteadmin" class="btn btn-sm btn-outline-primary mt-2"><i class="fa-solid fa-user-plus me-1"></i> Assign admin</a>
+                {% endif %}
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    {% empty %}
+      <div class="col-12">
+        <div class="alert alert-info"><i class="fa-regular fa-circle-dot me-1"></i> No sites yet. Create your first site.</div>
+      </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+{% else %}
+  {% if not show_bin %}
+  <form id="siteTableForm" method="post" class="card shadow-sm">
+    {% csrf_token %}
+    <div class="d-flex justify-content-between align-items-center p-2 border-bottom bg-body-tertiary">
+  <div></div>
+      <div class="d-flex gap-2">
+        <button type="button" id="bulkDeleteBtn" class="btn btn-outline-danger btn-sm"><i class="fa-regular fa-trash-can me-1"></i> Bulk delete</button>
+      </div>
+    </div>
+  <div class="table-responsive">
+      <table class="table table-hover align-middle m-0">
+        <thead class="table-light">
+          <tr>
+            <th style="width:2rem;"><input type="checkbox" id="selectAllSites" class="form-check-input js-select-all"></th>
+            <th style="width:3rem;">#</th>
+            <th>Name</th>
+            <th>Description</th>
+            <th>Attributes</th>
+            <th style="width:7rem;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in items_page.object_list %}
+            <tr>
+              <td><input type="checkbox" name="ids" value="{{ item.site.id }}" class="form-check-input row-check"></td>
+              <td>{{ forloop.counter }}</td>
+              <td><a href="/siteadmin/{{ item.site.id }}/">{{ item.site.name }}</a></td>
+              <td class="text-muted">{{ item.site.description|default:'—'|truncatechars:60 }}</td>
+              <td class="small">
+                <span class="me-2"><i class="fa-solid fa-diagram-project me-1"></i>{{ item.org_count }}</span>
+                <span><i class="fa-solid fa-users me-1"></i>{{ item.member_count }}</span>
+              </td>
+              <td>
+                <div class="btn-group btn-group-sm" role="group">
+                  <a href="/siteadmin/{{ item.site.id }}/" class="btn btn-outline-secondary" title="View"><i class="fa-regular fa-eye"></i></a>
+                  <a href="#" data-modal-url="{% url 'siteadmin_site_modal' item.site.id %}" class="btn btn-outline-secondary" title="Edit"><i class="fa-regular fa-pen-to-square"></i></a>
+                  <button type="button" class="btn btn-outline-danger js-delete-one" data-id="{{ item.site.id }}" title="Delete"><i class="fa-regular fa-trash-can"></i></button>
+                </div>
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="6" class="text-muted">No sites.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="d-flex justify-content-between align-items-center p-2 border-top bg-body-tertiary">
+      <div>
+        <form method="get" class="d-inline">
+          <input type="hidden" name="view" value="{{ view_mode }}"/>
+          <label class="me-1 small text-muted">Rows per page</label>
+          <select name="page_size" class="form-select form-select-sm d-inline w-auto" onchange="this.form.submit()">
+            {% for size in page_sizes %}
+              <option value="{{ size }}" {% if size == page_size %}selected{% endif %}>{{ size|capfirst }}</option>
+            {% endfor %}
+          </select>
+        </form>
+      </div>
+      <nav>
+        <ul class="pagination pagination-sm m-0">
+          {% if items_page.has_previous %}
+            <li class="page-item"><a class="page-link" href="?view={{ view_mode }}&page_size={{ page_size }}&page={{ items_page.number|add:'-1' }}">Previous</a></li>
+          {% else %}
+            <li class="page-item disabled"><span class="page-link">Previous</span></li>
+          {% endif %}
+          <li class="page-item disabled"><span class="page-link">Page {{ items_page.number }}</span></li>
+          {% if items_page.has_next %}
+            <li class="page-item"><a class="page-link" href="?view={{ view_mode }}&page_size={{ page_size }}&page={{ items_page.number|add:'1' }}">Next</a></li>
+          {% else %}
+            <li class="page-item disabled"><span class="page-link">Next</span></li>
+          {% endif %}
+        </ul>
+      </nav>
+    </div>
+  </form>
+  {% endif %}
+  {% if deleted_page and deleted_page.paginator.count > 0 %}
+  <div id="recycleBinPanel" class="card shadow-sm mt-3 {% if show_bin %}{% else %}d-none{% endif %}">
+    <div class="d-flex justify-content-between align-items-center p-2 border-bottom bg-body-tertiary">
+      <div class="fw-semibold"><i class="fa-solid fa-trash-can"></i> Recycle Bin</div>
+      <div class="d-flex gap-2">
+        <button type="button" id="rbRestoreBtn" class="btn btn-outline-success btn-sm"><i class="fa-solid fa-recycle me-1"></i> Restore selected</button>
+        <button type="button" id="rbPermadeleteBtn" class="btn btn-outline-danger btn-sm"><i class="fa-regular fa-trash-can me-1"></i> Permanently delete</button>
+      </div>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle m-0">
+        <thead class="table-light">
+          <tr>
+            <th style="width:2rem;"><input type="checkbox" id="rbSelectAll" class="form-check-input js-select-all"></th>
+            <th style="width:3rem;">#</th>
+            <th>Name</th>
+            <th>Attributes</th>
+            <th style="width:7rem;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in deleted_page.object_list %}
+          <tr>
+            <td><input type="checkbox" class="form-check-input row-check rb-row" value="{{ item.site.id }}"></td>
+            <td>{{ forloop.counter }}</td>
+            <td class="text-muted">{{ item.site.name }}</td>
+            <td class="small"><i class="fa-solid fa-diagram-project me-1"></i>{{ item.org_count }}</td>
+            <td>
+              <div class="btn-group btn-group-sm" role="group">
+                <button type="button" class="btn btn-outline-success js-rb-restore-one" data-id="{{ item.site.id }}" title="Restore"><i class="fa-solid fa-recycle"></i></button>
+                <button type="button" class="btn btn-outline-danger js-rb-permadelete-one" data-id="{{ item.site.id }}" title="Permanently delete"><i class="fa-regular fa-trash-can"></i></button>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="d-flex justify-content-between align-items-center p-2 border-top bg-body-tertiary">
+      <div>
+        <form method="get" class="d-inline">
+          <input type="hidden" name="view" value="{{ view_mode }}"/>
+          <input type="hidden" name="bin" value="1"/>
+          <label class="me-1 small text-muted">Rows per page</label>
+          <select name="page_size" class="form-select form-select-sm d-inline w-auto" onchange="this.form.submit()">
+            {% for size in page_sizes %}
+              <option value="{{ size }}" {% if size == page_size %}selected{% endif %}>{{ size|capfirst }}</option>
+            {% endfor %}
+          </select>
+        </form>
+      </div>
+      <nav>
+        <ul class="pagination pagination-sm m-0">
+          {% if deleted_page.has_previous %}
+            <li class="page-item"><a class="page-link" href="?view={{ view_mode }}&bin=1&page_size={{ page_size }}&page={{ deleted_page.number|add:'-1' }}">Previous</a></li>
+          {% else %}
+            <li class="page-item disabled"><span class="page-link">Previous</span></li>
+          {% endif %}
+          <li class="page-item disabled"><span class="page-link">Page {{ deleted_page.number }}</span></li>
+          {% if deleted_page.has_next %}
+            <li class="page-item"><a class="page-link" href="?view={{ view_mode }}&bin=1&page_size={{ page_size }}&page={{ deleted_page.number|add:'1' }}">Next</a></li>
+          {% else %}
+            <li class="page-item disabled"><span class="page-link">Next</span></li>
+          {% endif %}
+        </ul>
+      </nav>
+    </div>
+  </div>
+  {% endif %}
+{% endif %}
+{% endblock %}
+
+{% block extra %}
+<script>
+  (function(){
+  // Select-all for table view (use global delegated too)
+  // Already marked in markup with .js-select-all
+
+    async function postJSON(url, form){
+      const formData = new FormData(form);
+      const resp = await fetch(url, {method:'POST', headers:{'X-Requested-With':'XMLHttpRequest'}, body: formData});
+      return resp.json();
+    }
+
+    // Single delete from table
+    document.querySelectorAll('.js-delete-one').forEach(btn => {
+      btn.addEventListener('click', async ()=>{
+        const id = btn.getAttribute('data-id');
+        const ok = await window.confirmDialog({title:'Delete site', body:'Soft delete this site?', confirmText:'Delete', confirmClass:'btn-danger'});
+        if (!ok) return;
+        await fetch(`/siteadmin/${id}/delete/`, {method:'POST', headers:{'X-Requested-With':'XMLHttpRequest','X-CSRFToken': window.getCsrf()}});
+        window.location.reload();
+      });
+    });
+
+    // Bulk ops
+    const form = document.getElementById('siteTableForm');
+  const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
+    if (form && bulkDeleteBtn){
+      bulkDeleteBtn.addEventListener('click', async ()=>{
+        const ok = await window.confirmDialog({title:'Bulk delete', body:'Soft delete selected sites?', confirmText:'Delete selected', confirmClass:'btn-danger'});
+        if (!ok) return;
+        await postJSON('{% url "siteadmin_site_bulk_delete" %}', form);
+        window.location.reload();
+      });
+    }
+  // Note: Bulk restore is provided in the Recycle Bin panel only.
+
+    // Recycle Bin handlers
+    const rbRestoreBtn = document.getElementById('rbRestoreBtn');
+    const rbPermadeleteBtn = document.getElementById('rbPermadeleteBtn');
+    const rbPanel = document.getElementById('recycleBinPanel');
+    const rbToggle = document.getElementById('toggleRecycleBin');
+    if (rbToggle){
+      rbToggle.addEventListener('click', ()=>{
+        const params = new URLSearchParams(location.search);
+        const current = params.get('bin') === '1';
+        if (current) params.delete('bin'); else params.set('bin','1');
+        params.set('view','{{ view_mode }}');
+        window.location.href = window.location.pathname + '?' + params.toString();
+      });
+    }
+    function selectedRbIds(){
+      return Array.from(document.querySelectorAll('.rb-row:checked')).map(cb => cb.value);
+    }
+    if (rbRestoreBtn){
+      rbRestoreBtn.addEventListener('click', async ()=>{
+        const ids = selectedRbIds();
+        if (!ids.length) return;
+        const ok = await window.confirmDialog({title:'Restore', body:`Restore ${ids.length} site(s)?`, confirmText:'Restore selected', confirmClass:'btn-success'});
+        if (!ok) return;
+        const fd = new FormData();
+        ids.forEach(id => fd.append('ids', id));
+  await fetch('{% url "siteadmin_site_bulk_restore" %}', {method:'POST', headers:{'X-Requested-With':'XMLHttpRequest','X-CSRFToken': window.getCsrf()}, body: fd});
+  const params = new URLSearchParams(location.search); params.set('bin','1');
+  window.location.href = window.location.pathname + '?' + params.toString();
+      });
+    }
+    if (rbPermadeleteBtn){
+      rbPermadeleteBtn.addEventListener('click', async ()=>{
+        const ids = selectedRbIds();
+        if (!ids.length) return;
+        const ok = await window.confirmDialog({title:'Permanently delete', body:`Permanently delete ${ids.length} site(s)? This can be used for audit trail and cannot be restored via UI.`, confirmText:'Permanently delete', confirmClass:'btn-danger'});
+        if (!ok) return;
+        const fd = new FormData();
+        ids.forEach(id => fd.append('ids', id));
+  await fetch('{% url "siteadmin_site_bulk_permadelete" %}', {method:'POST', headers:{'X-Requested-With':'XMLHttpRequest','X-CSRFToken': window.getCsrf()}, body: fd});
+  const params = new URLSearchParams(location.search); params.set('bin','1');
+  window.location.href = window.location.pathname + '?' + params.toString();
+      });
+    }
+    document.querySelectorAll('.js-rb-restore-one').forEach(btn => {
+      btn.addEventListener('click', async ()=>{
+        const id = btn.getAttribute('data-id');
+        const ok = await window.confirmDialog({title:'Restore site', body:'Restore this site?', confirmText:'Restore', confirmClass:'btn-success'});
+        if (!ok) return;
+  await fetch(`/siteadmin/${id}/restore/`, {method:'POST', headers:{'X-Requested-With':'XMLHttpRequest','X-CSRFToken': window.getCsrf()}});
+  const params = new URLSearchParams(location.search); params.set('bin','1');
+  window.location.href = window.location.pathname + '?' + params.toString();
+      });
+    });
+    document.querySelectorAll('.js-rb-permadelete-one').forEach(btn => {
+      btn.addEventListener('click', async ()=>{
+        const id = btn.getAttribute('data-id');
+        const ok = await window.confirmDialog({title:'Permanently delete', body:'Permanently delete this site? This will mark it as permanently deleted for audit.', confirmText:'Permanently delete', confirmClass:'btn-danger'});
+        if (!ok) return;
+  await fetch(`/siteadmin/${id}/permadelete/`, {method:'POST', headers:{'X-Requested-With':'XMLHttpRequest','X-CSRFToken': window.getCsrf()}});
+  const params = new URLSearchParams(location.search); params.set('bin','1');
+  window.location.href = window.location.pathname + '?' + params.toString();
+      });
+    });
+  })();
+</script>
+{% endblock %}
