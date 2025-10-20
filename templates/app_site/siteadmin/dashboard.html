@@ -8,7 +8,7 @@
   </ol>
   </nav>
 <div class="d-flex justify-content-between align-items-center mb-3">
-  <h1 class="h4 m-0">Sites</h1>
+  <h1 class="h4 m-0"><i class="fa-solid fa-earth-americas me-2"></i>Sites</h1>
   <div class="d-flex align-items-center gap-2">
     <div class="btn-group" role="group" aria-label="View toggle">
       <a class="btn btn-outline-secondary btn-sm {% if view_mode == 'card' %}active{% endif %}" href="?view=card" title="Card view"><i class="fa-solid fa-grip"></i></a>
@@ -31,7 +31,7 @@
         <div class="card shadow-sm h-100">
           <div class="card-body">
             <div class="d-flex align-items-center justify-content-between mb-2">
-              <h2 class="h5 m-0"><a class="link-underline link-underline-opacity-0" href="/siteadmin/{{ item.site.id }}/">{{ item.site.name }}</a></h2>
+              <h2 class="h5 m-0"><a class="link-underline link-underline-opacity-0" href="/siteadmin/{{ item.site.id }}/"><i class="fa-solid fa-earth-americas me-1"></i>{{ item.site.name }}</a></h2>
               {% if request.user.is_staff or request.user.is_superuser %}
               <a href="#" data-modal-url="{% url 'siteadmin_site_modal' item.site.id %}" class="btn btn-sm btn-outline-secondary"><i class="fa-regular fa-pen-to-square"></i></a>
               {% endif %}
@@ -40,7 +40,7 @@
               <p class="text-muted mb-2 site-card-desc">{% if desc %}{{ desc|truncatechars:60 }}{% else %}&mdash;{% endif %}</p>
             {% endwith %}
             <div class="d-flex gap-3 small mb-3">
-              <span><i class="fa-solid fa-diagram-project me-1"></i> {{ item.org_count }} orgs</span>
+              <span><i class="fa-solid fa-building me-1"></i> {{ item.org_count }} orgs</span>
               <span><i class="fa-solid fa-users me-1"></i> {{ item.member_count }} members</span>
             </div>
             <div>
@@ -95,10 +95,10 @@
             <tr>
               <td><input type="checkbox" name="ids" value="{{ item.site.id }}" class="form-check-input row-check"></td>
               <td>{{ forloop.counter }}</td>
-              <td><a href="/siteadmin/{{ item.site.id }}/">{{ item.site.name }}</a></td>
+              <td><a href="/siteadmin/{{ item.site.id }}/"><i class="fa-solid fa-earth-americas me-1"></i>{{ item.site.name }}</a></td>
               <td class="text-muted">{{ item.site.description|default:'—'|truncatechars:60 }}</td>
               <td class="small">
-                <span class="me-2"><i class="fa-solid fa-diagram-project me-1"></i>{{ item.org_count }}</span>
+                <span class="me-2"><i class="fa-solid fa-building me-1"></i>{{ item.org_count }}</span>
                 <span><i class="fa-solid fa-users me-1"></i>{{ item.member_count }}</span>
               </td>
               <td>

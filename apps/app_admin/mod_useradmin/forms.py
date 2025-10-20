@@ -1,5 +1,5 @@
 from django import forms
-from django.contrib.auth import get_user_model
+from django.contrib.auth import authenticate, get_user_model
 
 
 User = get_user_model()
@@ -86,3 +86,69 @@ class BulkCSVForm(forms.Form):
         if not data.get('csv_text') and not data.get('csv_file'):
             raise forms.ValidationError('Provide CSV text or upload a CSV file.')
         return data
+
+
+class RegistrationForm(forms.Form):
+    invite_code = forms.CharField(max_length=64, label='Invite code')
+    email = forms.EmailField(label='Email')
+    username = forms.CharField(max_length=150, label='Username')
+    first_name = forms.CharField(max_length=150, required=False)
+    last_name = forms.CharField(max_length=150, required=False)
+    password1 = forms.CharField(widget=forms.PasswordInput, label='Password')
+    password2 = forms.CharField(widget=forms.PasswordInput, label='Confirm password')
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for name, field in self.fields.items():
+            cls = field.widget.attrs.get('class', '')
+            field.widget.attrs['class'] = (cls + ' form-control').strip()
+
+    def clean(self):
+        data = super().clean()
+        if data.get('password1') != data.get('password2'):
+            raise forms.ValidationError('Passwords do not match')
+        if User.objects.filter(username=data.get('username')).exists():
+            raise forms.ValidationError('Username already exists')
+        if User.objects.filter(email=data.get('email')).exists():
+            raise forms.ValidationError('Email already exists')
+        return data
+
+
+class LoginForm(forms.Form):
+    username = forms.CharField(max_length=150, label='Username or email')
+    password = forms.CharField(widget=forms.PasswordInput, label='Password')
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for name, field in self.fields.items():
+            cls = field.widget.attrs.get('class', '')
+            field.widget.attrs['class'] = (cls + ' form-control').strip()
+
+    def clean(self):
+        data = super().clean()
+        username = data.get('username')
+        password = data.get('password')
+        user = authenticate(username=username, password=password)
+        if not user:
+            # Try email login
+            try:
+                u = User.objects.get(email__iexact=username)
+                user = authenticate(username=u.username, password=password)
+            except User.DoesNotExist:
+                user = None
+        if not user:
+            raise forms.ValidationError('Invalid credentials')
+        data['user'] = user
+        return data
+
+
+class ProfileForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = ['first_name', 'last_name', 'email']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for name, field in self.fields.items():
+            cls = field.widget.attrs.get('class', '')
+            field.widget.attrs['class'] = (cls + ' form-control').strip()

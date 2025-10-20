@@ -1,13 +1,16 @@
 import csv
 import io
 from django.contrib import messages
-from django.contrib.auth import get_user_model
+from django.contrib.auth import get_user_model, login as auth_login, logout as auth_logout
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth.forms import PasswordChangeForm
+from django.contrib.auth import update_session_auth_hash
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 
-from .forms import UserForm, BulkCSVForm
-from .models import UserProfile
+from .forms import UserForm, BulkCSVForm, RegistrationForm, LoginForm, ProfileForm
+from .models import UserProfile, InviteToken
 
 
 User = get_user_model()
@@ -110,3 +113,86 @@ def user_bulk(request):
             results.append((idx, 'created' if created else 'updated', username))
         messages.success(request, f'Processed {len(results)} rows.')
     return render(request, 'app_admin/useradmin/bulk.html', {'form': form, 'results': results})
+
+
+@require_http_methods(["GET", "POST"])
+def register(request):
+    if request.user.is_authenticated:
+        return redirect('dashboard')
+    form = RegistrationForm(request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        code = form.cleaned_data['invite_code'].strip()
+        email = form.cleaned_data['email'].strip()
+        try:
+            invite = InviteToken.objects.get(code=code)
+        except InviteToken.DoesNotExist:
+            messages.error(request, 'Invalid invite code')
+        else:
+            if not invite.can_use(email):
+                messages.error(request, 'Invite code is not valid or expired')
+            else:
+                user = User.objects.create_user(
+                    username=form.cleaned_data['username'],
+                    email=email,
+                    password=form.cleaned_data['password1'],
+                    first_name=form.cleaned_data.get('first_name',''),
+                    last_name=form.cleaned_data.get('last_name',''),
+                    is_active=True,
+                )
+                _ensure_profile(user)
+                invite.is_active = False
+                invite.used_by = user
+                invite.used_at = timezone.now()
+                invite.save(update_fields=['is_active','used_by','used_at'])
+                messages.success(request, 'Account created. You can log in now.')
+                return redirect('login')
+    return render(request, 'auth/register.html', {'form': form})
+
+
+@require_http_methods(["GET", "POST"])
+def login(request):
+    if request.user.is_authenticated:
+        return redirect('dashboard')
+    form = LoginForm(request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        user = form.cleaned_data['user']
+        auth_login(request, user)
+        messages.success(request, f'Welcome, {user.first_name or user.username}!')
+        next_url = request.GET.get('next') or 'dashboard'
+        return redirect(next_url)
+    return render(request, 'auth/login.html', {'form': form})
+
+
+@login_required
+def logout(request):
+    auth_logout(request)
+    messages.info(request, 'You have been logged out.')
+    return redirect('login')
+
+
+@login_required
+def dashboard(request):
+    return render(request, 'auth/dashboard.html')
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def profile(request):
+    form = ProfileForm(request.POST or None, instance=request.user)
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        messages.success(request, 'Profile updated')
+        return redirect('profile')
+    return render(request, 'auth/profile.html', {'form': form})
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def change_password(request):
+    form = PasswordChangeForm(user=request.user, data=request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        user = form.save()
+        update_session_auth_hash(request, user)
+        messages.success(request, 'Password changed successfully')
+        return redirect('profile')
+    return render(request, 'auth/change_password.html', {'form': form})

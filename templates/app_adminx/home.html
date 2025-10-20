@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block title %}AdminX{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="/">Home</a></li>
+    <li class="breadcrumb-item active" aria-current="page">AdminX</li>
+  </ol>
+</nav>
+
+<h1 class="h4">AdminX</h1>
+<p class="text-muted">Foundation for user provisioning, role assignment, and framework constructs.</p>
+
+<div class="list-group">
+  <a class="list-group-item list-group-item-action" href="/admin/auth/user/">Users</a>
+  <a class="list-group-item list-group-item-action" href="/siteadmin/">Site Admin Portal</a>
+  <a class="list-group-item list-group-item-action" href="/orgadmin/">Organization Admin Portal</a>
+  <a class="list-group-item list-group-item-action" href="/admin/apps_app_constructs/constructtype/">Construct Types</a>
+  <a class="list-group-item list-group-item-action" href="/admin/apps_app_constructs/construct/">Constructs</a>
+  </div>
+{% endblock %}

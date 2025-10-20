@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block title %}Profile · {{ SITE_NAME }}{% endblock %}
+{% block content %}
+<h1 class="h3 mb-3">Profile</h1>
+<form method="post" class="col-md-8 col-lg-6" novalidate>
+  {% csrf_token %}
+  <div class="mb-3">
+    <label class="form-label">First name</label>
+    {{ form.first_name }}
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Last name</label>
+    {{ form.last_name }}
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Email</label>
+    {{ form.email }}
+  </div>
+  <div class="d-flex gap-2">
+    <button class="btn btn-primary" type="submit">Save</button>
+    <a class="btn btn-outline-secondary" href="/useradmin/change-password/">Change password</a>
+  </div>
+</form>
+{% endblock %}

@@ -15,10 +15,31 @@
   <nav class="navbar navbar-expand-lg bg-body-tertiary border-bottom sticky-top">
       <div class="container-fluid">
         <a class="navbar-brand d-flex align-items-center gap-2" href="/">
-          <img src="{% static 'img/brand-logo.svg' %}" alt="{{ SITE_NAME }}" width="120" height="30" style="object-fit: contain"/>
+          <span class="icon-jivapms icon-lg" aria-label="JIVAPMS mark">
+            <span class="bar red"></span><span class="bar orange"></span><span class="bar green"></span>
+          </span>
           <span class="fw-semibold">{{ SITE_NAME }}</span>
         </a>
-        <div class="d-flex ms-auto">
+        <div class="d-flex ms-auto align-items-center gap-2">
+          <a class="btn btn-outline-secondary btn-sm" href="/useradmin/dashboard/" title="Dashboard"><i class="fa-solid fa-gauge"></i></a>
+          {% if request.user.is_authenticated %}
+          <div class="dropdown">
+            <button class="btn btn-outline-secondary btn-sm dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+              <i class="fa-regular fa-user-circle"></i>
+              <span class="d-none d-sm-inline">{{ request.user.first_name|default:request.user.username }}</span>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li><a class="dropdown-item" href="/useradmin/dashboard/">Dashboard</a></li>
+              <li><a class="dropdown-item" href="/useradmin/profile/">Profile</a></li>
+              <li><a class="dropdown-item" href="/useradmin/change-password/">Change password</a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="/useradmin/logout/">Logout</a></li>
+            </ul>
+          </div>
+          {% else %}
+          <a class="btn btn-outline-primary btn-sm" href="/useradmin/login/">Login</a>
+          <a class="btn btn-primary btn-sm" href="/useradmin/register/">Register</a>
+          {% endif %}
           <button id="themeToggle" class="btn btn-outline-secondary btn-sm" type="button" aria-label="Toggle theme">🌓</button>
         </div>
       </div>
@@ -152,14 +173,20 @@
           modal.show();
           try {
             const resp = await fetch(url, {headers: {'X-Requested-With': 'XMLHttpRequest'}});
-            // Try JSON; if it fails, show error details
-            let data;
-            try { data = await resp.json(); } catch(e) { data = null; }
-            if (!data){
+            // Prefer JSON; if it fails, try text fallback (useful for debug/errors)
+            let data = null;
+            let text = '';
+            try { data = await resp.json(); } catch(e) {
+              try { text = await resp.text(); } catch(_) { text = ''; }
+            }
+            if (data){
+              body.innerHTML = data.form || data.toast || '<div class="text-danger">Unexpected response</div>';
+            } else if (text && text.trim().length > 0) {
+              body.innerHTML = text;
+            } else {
               body.innerHTML = '<div class="text-danger">Failed to load form.</div>';
               return;
             }
-            body.innerHTML = data.form || data.toast || '<div class="text-danger">Unexpected response</div>';
             const form = body.querySelector('form');
             if (form){
               form.addEventListener('submit', async (e)=>{
@@ -179,7 +206,16 @@
                   const params = new URLSearchParams(window.location.search);
                   window.location.href = window.location.pathname + (params.toString() ? ('?' + params.toString()) : '');
                 } else {
-                  body.innerHTML = (postData && postData.form) || '<div class="text-danger">Save failed.</div>';
+                  if (postData && (postData.form || postData.toast)) {
+                    body.innerHTML = postData.form || postData.toast;
+                  } else {
+                    try {
+                      const t = await postResp.text();
+                      body.innerHTML = t || '<div class="text-danger">Save failed.</div>';
+                    } catch(_) {
+                      body.innerHTML = '<div class="text-danger">Save failed.</div>';
+                    }
+                  }
                 }
               });
             }

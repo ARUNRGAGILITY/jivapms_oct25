@@ -17,6 +17,23 @@ main.container { min-height: 60vh; }
 .form-check .form-check-input { margin-right: .5rem; }
 .shadow-sm { box-shadow: 0 .125rem .25rem rgba(0,0,0,.075)!important; }
 
+.icon-jivapms{display:inline-flex;align-items:flex-end;gap:3px;vertical-align:middle}
+.icon-jivapms .bar{display:inline-block;width:3px;border-radius:2px}
+.icon-jivapms .bar.red{background:#e53935;height:10px}
+.icon-jivapms .bar.orange{background:#fb8c00;height:14px}
+.icon-jivapms .bar.green{background:#2e7d32;height:18px}
+
+/* size helpers */
+.icon-jivapms.icon-sm .bar{width:2px}
+.icon-jivapms.icon-sm .bar.red{height:8px}
+.icon-jivapms.icon-sm .bar.orange{height:11px}
+.icon-jivapms.icon-sm .bar.green{height:14px}
+
+.icon-jivapms.icon-lg .bar{width:4px}
+.icon-jivapms.icon-lg .bar.red{height:14px}
+.icon-jivapms.icon-lg .bar.orange{height:18px}
+.icon-jivapms.icon-lg .bar.green{height:22px}
+
 @media (prefers-color-scheme: dark) {
 	[data-bs-theme="dark"] .text-body { color: var(--bs-body-color) !important; }
 	[data-bs-theme="dark"] .text-body-secondary { color: var(--bs-secondary-color) !important; }
@@ -27,3 +44,10 @@ main.container { min-height: 60vh; }
 textarea.form-control { min-height: 12rem; }
 @media (min-width: 576px) { textarea.form-control { min-height: 16rem; } }
 .breadcrumb { --bs-breadcrumb-divider: ">"; }
+
+/* Org section view styling */
+.org-section{margin-bottom:1.5rem}
+.org-section-title{font-size:1.15rem;font-weight:600;margin:0 0 .4rem 0}
+.org-section-body{white-space:pre-wrap;line-height:1.55}
+/* Give room when scrolled via anchor; account for sticky navbar */
+.org-section{scroll-margin-top: 90px;}

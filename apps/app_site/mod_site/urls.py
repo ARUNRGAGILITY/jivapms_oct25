@@ -3,11 +3,12 @@ from .views import (
     dashboard,
     site_detail,
     organization_detail,
+    organization_home,
     site_create_modal,
     site_edit_modal,
     organization_edit_modal,
     membership_edit_modal,
-        membership_soft_delete,
+    membership_soft_delete,
     org_list_bulk_admin,
     org_soft_delete,
     org_restore,
@@ -19,6 +20,11 @@ from .views import (
     site_bulk_restore,
     site_permadelete,
     site_bulk_permadelete,
+    organization_section_edit_modal,
+    organization_type_option_create_modal,
+    organization_type_manage_modal,
+    organization_settings_modal,
+    organization_tab_edit_modal,
 )
 
 
@@ -26,6 +32,7 @@ urlpatterns = [
     path('', dashboard, name='siteadmin_dashboard'),
     path('<int:site_id>/', site_detail, name='siteadmin_detail'),
     path('<int:site_id>/orgs/<int:org_id>/', organization_detail, name='siteadmin_org_detail'),
+    path('<int:site_id>/orgs/<int:org_id>/home/', organization_home, name='siteadmin_org_home'),
     path('<int:site_id>/orgs/bulk-admin/', org_list_bulk_admin, name='siteadmin_org_bulk_admin'),
     path('<int:site_id>/orgs/<int:org_id>/delete/', org_soft_delete, name='siteadmin_org_delete'),
     path('<int:site_id>/orgs/<int:org_id>/restore/', org_restore, name='siteadmin_org_restore'),
@@ -44,6 +51,12 @@ urlpatterns = [
     path('<int:site_id>/modal/org/<int:org_id>/', organization_edit_modal, name='siteadmin_org_edit_modal'),
     path('<int:site_id>/modal/membership/new/', membership_edit_modal, name='siteadmin_membership_new_modal'),
     path('<int:site_id>/modal/membership/<int:membership_id>/', membership_edit_modal, name='siteadmin_membership_edit_modal'),
+    # organization section editing and type management
+    path('<int:site_id>/orgs/<int:org_id>/modal/section/<int:section_id>/', organization_section_edit_modal, name='siteadmin_org_section_modal'),
+    path('<int:site_id>/orgs/<int:org_id>/modal/type/new/', organization_type_option_create_modal, name='siteadmin_org_type_new_modal'),
+    path('<int:site_id>/orgs/<int:org_id>/modal/type/manage/', organization_type_manage_modal, name='siteadmin_org_type_manage_modal'),
+    path('<int:site_id>/orgs/<int:org_id>/modal/tab/edit/', organization_tab_edit_modal, name='siteadmin_org_tab_edit_modal'),
+    path('<int:site_id>/orgs/<int:org_id>/modal/settings/', organization_settings_modal, name='siteadmin_org_settings_modal'),
         path('<int:site_id>/membership/<int:membership_id>/delete/', membership_soft_delete, name='siteadmin_membership_delete'),
     # site permanent delete (soft permanent) for audit trail
     path('<int:site_id>/permadelete/', site_permadelete, name='siteadmin_site_permadelete'),

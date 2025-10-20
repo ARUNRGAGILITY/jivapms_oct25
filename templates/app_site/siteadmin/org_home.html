@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+{% load dict_extras %}
+{% block title %}{{ org.name }} - Organization{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="/">Home</a></li>
+    <li class="breadcrumb-item"><a href="/siteadmin/">Sites</a></li>
+    <li class="breadcrumb-item"><a href="/siteadmin/{{ site.id }}/">{{ site.name }}</a></li>
+    <li class="breadcrumb-item active" aria-current="page">{{ org.name }}</li>
+  </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h4 m-0"><i class="fa-solid fa-building me-2"></i>{{ org.name }}</h1>
+  <div class="btn-group">
+    <button class="btn btn-outline-secondary" data-modal-url="{% url 'siteadmin_org_tab_edit_modal' site.id org.id %}?tab={{ active_tab }}"><i class="fa-regular fa-pen-to-square"></i> Edit</button>
+    {% if is_site_admin or is_org_admin %}
+      <button class="btn btn-outline-secondary" title="Organization settings" data-modal-url="{% url 'siteadmin_org_settings_modal' site.id org.id %}"><i class="fa-solid fa-gear"></i></button>
+    {% endif %}
+  </div>
+  </div>
+
+<ul class="nav nav-tabs" id="orgTabs" role="tablist">
+  {% for tab in 'Overview,Business,Delivery,Operations,Metrics,Review,Reports'|split:',' %}
+  {% with code=tab|lower %}
+  <li class="nav-item" role="presentation">
+    <a class="nav-link {% if active_tab == code %}active{% endif %}" href="?tab={{ code }}" role="tab">{{ tab }}</a>
+  </li>
+  {% endwith %}
+  {% endfor %}
+</ul>
+
+<div class="tab-content pt-3">
+  {% for tab in 'overview,business,delivery,operations,metrics,review,reports'|split:',' %}
+  <div class="tab-pane fade {% if active_tab == tab %}show active{% endif %}" id="tab-{{ tab }}" role="tabpanel">
+    <div class="row g-3">
+      <div class="col-md-3">
+        {% if tab == 'overview' %}
+          <div id="overviewToc" class="list-group position-sticky" style="top: 80px;">
+            {% for sec in 'Vision,Mission,Value,Strategy,Structure,Type,Summary'|split:',' %}
+              <a class="list-group-item list-group-item-action" href="#sec-{{ sec|slugify }}">{{ sec }}</a>
+            {% endfor %}
+          </div>
+        {% elif tab == 'delivery' %}
+          <div id="deliveryToc" class="list-group position-sticky" style="top: 80px;">
+            {% for sec in 'Portfolio,Program,Projects / Products / Services'|split:',' %}
+              <a class="list-group-item list-group-item-action" href="#sec-{{ sec|slugify }}">{{ sec }}</a>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="text-muted small">No left menu for this tab yet.</div>
+        {% endif %}
+      </div>
+      <div class="col-md-9">
+        <div data-bs-spy="scroll" data-bs-target="#{{ active_tab }}Toc" data-bs-offset="80" tabindex="0" style="position: relative; height: auto;">
+          {% if active_tab == 'overview' %}
+            {% for sec in 'Vision,Mission,Value,Strategy,Structure,Type,Summary'|split:',' %}
+              <section id="sec-{{ sec|slugify }}" class="org-section">
+                <h2 class="org-section-title">{{ sec }}</h2>
+                <div class="org-section-body">{{ org.meta.overview|get_item:sec }}</div>
+              </section>
+            {% endfor %}
+          {% elif active_tab == 'delivery' %}
+            {% for sec in 'Portfolio,Program,Projects / Products / Services'|split:',' %}
+              <section id="sec-{{ sec|slugify }}" class="org-section">
+                <h2 class="org-section-title">{{ sec }}</h2>
+                <div class="org-section-body">{{ org.meta.delivery|get_item:sec }}</div>
+              </section>
+            {% endfor %}
+          {% else %}
+            <div class="card"><div class="card-body text-muted">No content wired for this tab yet.</div></div>
+          {% endif %}
+          <!-- Spacer to allow scrolling beyond last section for TOC highlighting -->
+          <div style="height: 60vh"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<script>
+  // Activate the correct list-group link as user scrolls
+  (function(){
+    const tocId = '{{ active_tab }}Toc';
+    const toc = document.getElementById(tocId);
+    if (!toc) return;
+    const links = toc.querySelectorAll('a.list-group-item');
+    const sections = Array.from(links).map(a => document.querySelector(a.getAttribute('href'))).filter(Boolean);
+    const onScroll = () => {
+      let idx = 0;
+      const y = window.scrollY + 100; // account for navbar
+      sections.forEach((sec, i) => { if (sec.offsetTop <= y) idx = i; });
+      links.forEach(l => l.classList.remove('active'));
+      if (links[idx]) links[idx].classList.add('active');
+    };
+    document.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+  })();
+</script>
+{% endblock %}

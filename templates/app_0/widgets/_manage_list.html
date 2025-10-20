@@ -1,0 +1,161 @@
+<div id="manageRoot" data-show-bin="{% if show_bin %}1{% else %}0{% endif %}">
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <h6 class="m-0">{{ title|default:'Manage Items' }}</h6>
+    <div class="btn-group">
+      {% if add_url %}
+      <a href="#" class="btn btn-sm btn-outline-primary" data-modal-url="{{ add_url }}"><i class="fa-solid fa-plus"></i> Add</a>
+      {% endif %}
+      <button type="button" class="btn btn-sm btn-outline-secondary" id="toggleBinBtn">
+        {% if show_bin %}<i class="fa-solid fa-list"></i> Back to list{% else %}<i class="fa-regular fa-trash-can"></i> Recycle bin{% endif %}
+      </button>
+    </div>
+  </div>
+  <form id="manageListForm">
+    {% csrf_token %}
+    <div class="table-responsive">
+      <table class="table table-sm align-middle">
+        <thead>
+          <tr>
+            <th style="width:36px;"><input type="checkbox" id="chkAll"></th>
+            <th style="width:28px;"></th>
+            <th style="width:60px;">#</th>
+            <th>Name</th>
+            <th style="width:110px;">Position</th>
+            <th style="width:110px;">Status</th>
+            <th style="width:220px;" class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="dndBody">
+        {% for o in items %}
+          <tr data-id="{{ o.id }}" {% if not show_bin %}draggable="true"{% endif %} class="{% if o.deleted %}text-muted{% endif %}">
+            <td><input type="checkbox" name="ids" value="{{ o.id }}" class="chkItem"></td>
+            <td class="text-muted"><i class="fa-solid fa-grip-vertical"></i></td>
+            <td>{{ forloop.counter }}</td>
+            <td class="fw-semibold">{{ o.name }}</td>
+            <td><span class="badge text-bg-light">{{ o.position }}</span></td>
+            <td>
+              {% if o.deleted %}
+                <span class="badge bg-secondary">Deleted</span>
+              {% elif o.active %}
+                <span class="badge bg-success">Active</span>
+              {% else %}
+                <span class="badge bg-warning text-dark">Inactive</span>
+              {% endif %}
+            </td>
+            <td class="text-end">
+              <div class="btn-group btn-group-sm">
+                {% if not show_bin %}
+                  <button class="btn btn-outline-warning" data-action="toggle" data-id="{{ o.id }}" title="Toggle active"><i class="fa-solid fa-power-off"></i></button>
+                  <button class="btn btn-outline-danger" data-action="delete" data-id="{{ o.id }}" title="Delete"><i class="fa-regular fa-trash-can"></i></button>
+                {% else %}
+                  <button class="btn btn-outline-primary" data-action="restore" data-id="{{ o.id }}" title="Restore"><i class="fa-solid fa-rotate-left"></i></button>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="7" class="text-muted small">No items.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="d-flex justify-content-between align-items-center mt-2">
+      <div class="btn-group btn-group-sm">
+        {% if not show_bin %}
+          <button class="btn btn-outline-danger" data-bulk="delete" type="button"><i class="fa-regular fa-trash-can me-1"></i>Delete selected</button>
+        {% else %}
+          <button class="btn btn-outline-primary" data-bulk="restore" type="button"><i class="fa-solid fa-rotate-left me-1"></i>Restore selected</button>
+        {% endif %}
+      </div>
+      {% if not show_bin %}
+      <button type="button" class="btn btn-sm btn-primary" id="saveOrderBtn"><i class="fa-solid fa-floppy-disk me-1"></i>Save order</button>
+      {% endif %}
+    </div>
+  </form>
+</div>
+<script>
+  (function(){
+    const body = document.currentScript.closest('#modal-body') || document;
+    const form = body.querySelector('#manageListForm');
+    const chkAll = form.querySelector('#chkAll');
+    const dndBody = form.querySelector('#dndBody');
+    const saveOrderBtn = form.querySelector('#saveOrderBtn');
+    const toggleBinBtn = body.querySelector('#toggleBinBtn');
+
+    function currentUrlWithBin(show){
+      const u = new URL(window.location.href);
+      if (show) u.searchParams.set('bin','1'); else u.searchParams.delete('bin');
+      return u.toString();
+    }
+
+    if (toggleBinBtn){
+      toggleBinBtn.addEventListener('click', async ()=>{
+        const root = body.querySelector('#manageRoot');
+        const isBin = (root?.dataset.showBin === '1');
+        const url = currentUrlWithBin(!isBin);
+        // Reload modal content with bin toggle
+        const resp = await fetch(url, {headers:{'X-Requested-With':'XMLHttpRequest'}});
+        const data = await resp.json(); if (data && data.form) body.innerHTML = data.form;
+      });
+    }
+
+    chkAll.addEventListener('change', ()=>{
+      form.querySelectorAll('.chkItem').forEach(ch => ch.checked = chkAll.checked);
+    });
+
+    async function post(action, ids){
+      const fd = new FormData(); fd.append('action', action);
+      if (Array.isArray(ids)) ids.forEach(id => fd.append('ids', id));
+      else if (ids) fd.append('id', ids);
+      const resp = await fetch(window.location.href, {method:'POST', headers:{'X-Requested-With':'XMLHttpRequest','X-CSRFToken': window.getCsrf()}, body: fd});
+      try { const data = await resp.json(); if (data && data.form) body.innerHTML = data.form; } catch(e) {}
+    }
+
+    // Drag and drop reorder (only when not in bin view)
+    if (dndBody && saveOrderBtn){
+      let dragEl = null;
+      dndBody.addEventListener('dragstart', (e)=>{
+        const tr = e.target.closest('tr[draggable="true"]');
+        if (!tr) return; dragEl = tr; e.dataTransfer.effectAllowed = 'move';
+      });
+      dndBody.addEventListener('dragover', (e)=>{
+        e.preventDefault();
+        const tr = e.target.closest('tr[draggable="true"]');
+        if (!tr || tr === dragEl) return;
+        const rect = tr.getBoundingClientRect();
+        const after = (e.clientY - rect.top) > rect.height / 2;
+        dndBody.insertBefore(dragEl, after ? tr.nextSibling : tr);
+      });
+      dndBody.addEventListener('drop', (e)=>{ e.preventDefault(); dragEl = null; renumber(); });
+      dndBody.addEventListener('dragend', ()=>{ dragEl = null; renumber(); });
+
+      function renumber(){
+        Array.from(dndBody.querySelectorAll('tr')).forEach((tr, i)=>{
+          const cell = tr.children[2]; if (cell) cell.textContent = (i+1).toString();
+        });
+      }
+
+      saveOrderBtn.addEventListener('click', ()=>{
+        const ids = Array.from(dndBody.querySelectorAll('tr')).map(tr => tr.getAttribute('data-id'));
+        post('reorder', ids);
+      });
+    }
+
+    // Row action buttons
+    body.addEventListener('click', (e)=>{
+      const btn = e.target.closest('button[data-action]');
+      if (!btn) return;
+      e.preventDefault();
+      post(btn.getAttribute('data-action'), btn.getAttribute('data-id'));
+    });
+    // Bulk buttons
+    body.addEventListener('click', (e)=>{
+      const bulk = e.target.closest('button[data-bulk]');
+      if (!bulk) return;
+      e.preventDefault();
+      const ids = Array.from(form.querySelectorAll('.chkItem:checked')).map(ch => ch.value);
+      if (ids.length === 0) return;
+      post(bulk.getAttribute('data-bulk'), ids);
+    });
+  })();
+</script>

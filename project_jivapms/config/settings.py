@@ -26,6 +26,9 @@ INSTALLED_APPS = [
     'apps.app_0.apps.App0Config',
     'apps.app_admin.apps.AppAdminConfig',
     'apps.app_site.apps.AppSiteConfig',
+    'apps.app_organization.apps.AppOrganizationConfig',
+    'apps.app_adminx.apps.AppAdminXConfig',
+    'apps.app_constructs',
 ]
 
 MIDDLEWARE = [
@@ -92,4 +95,5 @@ if str(TOP_LEVEL_DIR) not in sys.path:
     sys.path.insert(0, str(TOP_LEVEL_DIR))
 
 # Auth
-LOGIN_URL = '/admin/login/'
+LOGIN_URL = '/useradmin/login/'
+LOGIN_REDIRECT_URL = '/useradmin/dashboard/'

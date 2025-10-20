@@ -8,11 +8,10 @@ from apps.app_admin.mod_siteadmin.models import Site, Organization, Membership, 
 class SiteForm(forms.ModelForm):
     class Meta:
         model = Site
-        fields = ["name", "description", "active"]  # slug is auto-generated
+        fields = ["name", "description"]  # slug is auto-generated; 'active' is managed by delete/restore
         widgets = {
             "name": forms.TextInput(attrs={"class": "form-control"}),
             "description": forms.Textarea(attrs={"class": "form-control", "rows": 4}),
-            "active": forms.CheckboxInput(attrs={"class": "form-check-input"}),
         }
 
     def save(self, commit=True):
@@ -34,11 +33,10 @@ class SiteForm(forms.ModelForm):
 class OrganizationForm(forms.ModelForm):
     class Meta:
         model = Organization
-        fields = ["name", "description", "active"]  # slug is auto-generated
+        fields = ["name", "description"]  # slug is auto-generated; 'active' is managed by delete/restore
         widgets = {
             "name": forms.TextInput(attrs={"class": "form-control"}),
             "description": forms.Textarea(attrs={"class": "form-control", "rows": 3}),
-            "active": forms.CheckboxInput(attrs={"class": "form-check-input"}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -68,12 +66,11 @@ class OrganizationForm(forms.ModelForm):
 class MembershipForm(forms.ModelForm):
     class Meta:
         model = Membership
-        fields = ["user", "role", "organization", "active"]
+        fields = ["user", "role", "organization"]
         widgets = {
             "user": forms.Select(attrs={"class": "form-select"}),
             "role": forms.Select(attrs={"class": "form-select"}),
             "organization": forms.Select(attrs={"class": "form-select"}),
-            "active": forms.CheckboxInput(attrs={"class": "form-check-input"}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -96,7 +93,6 @@ class MembershipForm(forms.ModelForm):
 
 class BulkOrgAdminForm(forms.Form):
     user = forms.ModelChoiceField(queryset=None, widget=forms.Select(attrs={"class": "form-select"}))
-    active = forms.BooleanField(required=False, initial=True, widget=forms.CheckboxInput(attrs={"class": "form-check-input"}))
 
     def __init__(self, *args, **kwargs):
         site = kwargs.pop("site", None)

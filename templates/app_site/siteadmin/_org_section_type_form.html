@@ -1,0 +1,26 @@
+<form method="post">
+  {% csrf_token %}
+  <div class="mb-3">
+    <label class="form-label">Type</label>
+    <div class="input-group mb-2">
+      {{ form.type_choice }}
+      <button class="btn btn-outline-secondary" type="button" title="Add type" data-modal-url="{% url 'siteadmin_org_type_new_modal' site.id org.id %}"><i class="fa-solid fa-plus"></i></button>
+    </div>
+    <div id="customTypeWrapper" class="mt-1" style="display:none;">
+      <label class="form-label">Custom type</label>
+      {{ form.other_value }}
+    </div>
+  </div>
+  <div class="text-end">
+    <button type="submit" class="btn btn-primary">Save</button>
+  </div>
+</form>
+<script>
+  (function(){
+    const select = document.querySelector('select[name="type_choice"]');
+    const customWrap = document.getElementById('customTypeWrapper');
+    const sentinel = '__custom__';
+    function sync(){ customWrap.style.display = (select.value === sentinel) ? 'block' : 'none'; }
+    if (select){ select.addEventListener('change', sync); sync(); }
+  })();
+</script>

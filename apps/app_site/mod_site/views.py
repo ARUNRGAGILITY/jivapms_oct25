@@ -1,11 +1,18 @@
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.http import JsonResponse, HttpResponseBadRequest, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, render
+from django.utils.text import slugify
 from django.template.loader import render_to_string
 from django.views.decorators.http import require_http_methods
 from django.core.paginator import Paginator
 
 from apps.app_admin.mod_siteadmin.models import Site, Organization, Membership, Role
+from apps.app_organization.mod_organization.models import OrganizationSection, OrganizationTypeOption
+from apps.app_organization.mod_organization.forms import (
+    OrganizationSectionForm,
+    OrganizationSectionTypeForm,
+    OrganizationTypeOptionForm,
+)
 from .forms import SiteForm, OrganizationForm, MembershipForm, BulkOrgAdminForm
 
 
@@ -24,6 +31,13 @@ def _is_site_admin(user, site: Site | None = None) -> bool:
     if not role:
         return False
     return Membership.objects.filter(user=user, site=site, organization__isnull=True, role=role, active=True).exists()
+
+
+def _is_org_admin(user, site: Site, org: Organization) -> bool:
+    role = Role.objects.filter(code='orgadmin').first()
+    if not role:
+        return False
+    return Membership.objects.filter(user=user, site=site, organization=org, role=role, active=True).exists()
 
 
 @login_required
@@ -165,6 +179,295 @@ def organization_detail(request, site_id: int, org_id: int):
     }
     return render(request, 'app_site/siteadmin/org_detail.html', ctx)
 
+
+# Organization home with tabs and scrollspy TOC
+@login_required
+def organization_home(request, site_id: int, org_id: int):
+    site = get_object_or_404(Site.objects.all(), pk=site_id)
+    if not _is_site_admin(request.user, site):
+        return HttpResponseForbidden()
+    org = get_object_or_404(Organization.objects.all(), pk=org_id, site=site)
+    active_tab = request.GET.get('tab', 'overview').lower()
+    if active_tab not in {'overview','business','delivery','operations','metrics','review','reports'}:
+        active_tab = 'overview'
+    # Ensure baseline sections exist for known tabs/titles
+    default_titles = {
+        'overview': ['Vision','Mission','Value','Strategy','Structure','Type','Summary'],
+        'delivery': ['Portfolio','Program','Projects / Products / Services'],
+    }
+    if active_tab in default_titles:
+        for idx, title in enumerate(default_titles[active_tab]):
+            key = slugify(title)[:64]
+            sec, created = OrganizationSection.objects.get_or_create(
+                organization=org, tab=active_tab, key=key, defaults={'title': title, 'order': idx}
+            )
+            # Do not change order if already exists; only set on creation
+    # Load sections and build maps
+    sections = OrganizationSection.objects.filter(organization=org, active=True).order_by('tab', 'order', 'id')
+    meta: dict[str, dict[str, str]] = {}
+    meta_ids: dict[str, dict[str, int]] = {}
+    for sec in sections:
+        meta.setdefault(sec.tab, {})[sec.title] = sec.content or ''
+        meta_ids.setdefault(sec.tab, {})[sec.title] = sec.id
+    org.meta = meta
+    org.meta_ids = meta_ids
+    # Permissions for editing
+    is_site_admin = _is_site_admin(request.user, site)
+    is_org_admin = _is_org_admin(request.user, site, org)
+    # Org admin can edit only a subset of sections; site admin can edit all
+    editable_by_org_admin = {
+        'overview': {t: True for t in ['Vision','Mission','Value','Strategy','Structure','Type','Summary']},
+        'delivery': {t: True for t in ['Portfolio','Program','Projects / Products / Services']},
+    }
+    ctx = {
+        'site': site,
+        'org': org,
+        'active_tab': active_tab,
+        'can_manage_types': (is_site_admin or is_org_admin),
+        'is_site_admin': is_site_admin,
+        'is_org_admin': is_org_admin,
+        'editable_by_org_admin': editable_by_org_admin,
+    }
+    return render(request, 'app_site/siteadmin/org_home.html', ctx)
+
+
+# ----- Organization content modals -----
+@login_required
+@require_http_methods(["GET", "POST"])
+def organization_section_edit_modal(request, site_id: int, org_id: int, section_id: int):
+    site = get_object_or_404(Site.objects.all(), pk=site_id)
+    org = get_object_or_404(Organization.objects.all(), pk=org_id, site=site)
+    is_site_admin = _is_site_admin(request.user, site)
+    is_org_admin = _is_org_admin(request.user, site, org)
+    if not (is_site_admin or is_org_admin):
+        return HttpResponseForbidden()
+    sec = get_object_or_404(OrganizationSection.objects.all(), pk=section_id, organization=org)
+    # If org admin, restrict to allowed sections
+    if is_org_admin and not is_site_admin:
+        allowed_titles = {
+            'overview': {'Vision','Mission','Value','Strategy','Structure','Type','Summary'},
+            'delivery': {'Portfolio','Program','Projects / Products / Services'},
+        }
+        if sec.title not in allowed_titles.get(sec.tab, set()):
+            return HttpResponseForbidden()
+    # Choose form: special case for Overview → Type
+    if sec.tab == 'overview' and sec.title.lower() == 'type':
+        FormClass = OrganizationSectionTypeForm
+        template = 'app_site/siteadmin/_org_section_type_form.html'
+    else:
+        FormClass = OrganizationSectionForm
+        template = 'app_site/siteadmin/_org_section_form.html'
+    if request.method == 'POST':
+        form = FormClass(request.POST, instance=sec)
+        if form.is_valid():
+            form.save()
+            html = render_to_string('app_site/siteadmin/_toast_success.html', {"message": f"{sec.title} updated."}, request=request)
+            return JsonResponse({"ok": True, "toast": html})
+        else:
+            html = render_to_string(template, {"form": form, "site": site, "org": org, "section": sec}, request=request)
+            return JsonResponse({"ok": False, "form": html}, status=400)
+    else:
+        form = FormClass(instance=sec)
+        html = render_to_string(template, {"form": form, "site": site, "org": org, "section": sec}, request=request)
+        return JsonResponse({"ok": True, "form": html})
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def organization_type_option_create_modal(request, site_id: int, org_id: int):
+    site = get_object_or_404(Site.objects.all(), pk=site_id)
+    org = get_object_or_404(Organization.objects.all(), pk=org_id, site=site)
+    if not (_is_site_admin(request.user, site) or _is_org_admin(request.user, site, org)):
+        return HttpResponseForbidden()
+    if request.method == 'POST':
+        form = OrganizationTypeOptionForm(request.POST)
+        if form.is_valid():
+            form.save()
+            html = render_to_string('app_site/siteadmin/_toast_success.html', {"message": "Type added."}, request=request)
+            return JsonResponse({"ok": True, "toast": html})
+        else:
+            html = render_to_string('app_site/siteadmin/_type_option_form.html', {"form": form}, request=request)
+            return JsonResponse({"ok": False, "form": html}, status=400)
+    else:
+        form = OrganizationTypeOptionForm()
+        html = render_to_string('app_site/siteadmin/_type_option_form.html', {"form": form}, request=request)
+        return JsonResponse({"ok": True, "form": html})
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def organization_tab_edit_modal(request, site_id: int, org_id: int):
+    """Edit all sections of the current tab in one modal. Uses prefixed forms per section.
+    Overview→Type uses OrganizationSectionTypeForm; others use OrganizationSectionForm.
+    """
+    site = get_object_or_404(Site.objects.all(), pk=site_id)
+    org = get_object_or_404(Organization.objects.all(), pk=org_id, site=site)
+    is_site_admin = _is_site_admin(request.user, site)
+    is_org_admin = _is_org_admin(request.user, site, org)
+    if not (is_site_admin or is_org_admin):
+        return HttpResponseForbidden()
+    tab = (request.GET.get('tab') or request.POST.get('tab') or 'overview').lower()
+    allowed_tabs = {'overview','business','delivery','operations','metrics','review','reports'}
+    if tab not in allowed_tabs:
+        tab = 'overview'
+    # Ensure baseline sections similar to organization_home
+    default_titles = {
+        'overview': ['Vision','Mission','Value','Strategy','Structure','Type','Summary'],
+        'delivery': ['Portfolio','Program','Projects / Products / Services'],
+    }
+    if tab in default_titles:
+        for idx, title in enumerate(default_titles[tab]):
+            key = slugify(title)[:64]
+            # Look across all records including deleted; restore if necessary
+            existing = OrganizationSection.all_objects.filter(organization=org, tab=tab, key=key).first()
+            if existing:
+                if getattr(existing, 'deleted', False):
+                    existing.deleted = False
+                    existing.active = True
+                    existing.save(update_fields=['deleted', 'active'])
+            else:
+                # Create with canonical order index
+                OrganizationSection.objects.create(organization=org, tab=tab, key=key, title=title, order=idx)
+    sections_qs = OrganizationSection.objects.filter(organization=org, tab=tab, active=True).order_by('order','id')
+    # Restrict editable set for org admin (site admin sees all)
+    if not is_site_admin and is_org_admin:
+        allowed_titles = {
+            'overview': ['Vision','Mission','Value','Strategy','Structure','Type','Summary'],
+            'delivery': ['Portfolio','Program','Projects / Products / Services'],
+        }
+        allowed = set(allowed_titles.get(tab, []))
+        sections = [s for s in sections_qs if s.title in allowed]
+    else:
+        sections = list(sections_qs)
+
+    # Build forms with unique prefixes
+    form_specs = []
+    if request.method == 'POST':
+        all_valid = True
+        for sec in sections:
+            prefix = f"sec_{sec.id}"
+            if tab == 'overview' and sec.title.lower() == 'type':
+                form = OrganizationSectionTypeForm(request.POST, instance=sec, prefix=prefix)
+            else:
+                form = OrganizationSectionForm(request.POST, instance=sec, prefix=prefix)
+            form_specs.append((sec, form))
+            if not form.is_valid():
+                all_valid = False
+        if all_valid:
+            for _, form in form_specs:
+                form.save()
+            html = render_to_string('app_site/siteadmin/_toast_success.html', {"message": f"{tab.title()} updated."}, request=request)
+            return JsonResponse({"ok": True, "toast": html})
+        else:
+            html = render_to_string('app_site/siteadmin/_org_tab_bulk_edit.html', {"site": site, "org": org, "tab": tab, "form_specs": form_specs}, request=request)
+            return JsonResponse({"ok": False, "form": html}, status=400)
+    else:
+        for sec in sections:
+            prefix = f"sec_{sec.id}"
+            if tab == 'overview' and sec.title.lower() == 'type':
+                form = OrganizationSectionTypeForm(instance=sec, prefix=prefix)
+            else:
+                form = OrganizationSectionForm(instance=sec, prefix=prefix)
+            form_specs.append((sec, form))
+        html = render_to_string('app_site/siteadmin/_org_tab_bulk_edit.html', {"site": site, "org": org, "tab": tab, "form_specs": form_specs}, request=request)
+        return JsonResponse({"ok": True, "form": html})
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def organization_type_manage_modal(request, site_id: int, org_id: int):
+    """Simple list-management modal for type options: reorder, activate/deactivate, delete."""
+    site = get_object_or_404(Site.objects.all(), pk=site_id)
+    org = get_object_or_404(Organization.objects.all(), pk=org_id, site=site)
+    if not (_is_site_admin(request.user, site) or _is_org_admin(request.user, site, org)):
+        return HttpResponseForbidden()
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        opt_id = request.POST.get('id')
+        ids = request.POST.getlist('ids')
+        if action == 'reorder' and ids:
+            # Reorder by list order
+            for idx, pk in enumerate(ids):
+                OrganizationTypeOption.all_objects.filter(pk=pk).update(position=idx)
+        elif action in {'delete','restore'} and ids:
+            qs = OrganizationTypeOption.all_objects.filter(pk__in=ids)
+            if action == 'delete':
+                for o in qs: o.delete()
+            else:
+                for o in qs:
+                    if hasattr(o, 'deleted'):
+                        o.deleted = False
+                        o.active = True
+                        o.save(update_fields=['deleted','active'])
+        elif action and opt_id:
+            opt = get_object_or_404(OrganizationTypeOption.all_objects, pk=opt_id)
+            if action == 'toggle':
+                opt.active = not opt.active
+                opt.save(update_fields=['active'])
+            elif action == 'delete':
+                opt.delete()
+            elif action == 'restore':
+                if hasattr(opt, 'deleted'):
+                    opt.deleted = False
+                    opt.active = True
+                    opt.save(update_fields=['deleted','active'])
+            elif action == 'up':
+                opt.position = max(0, (opt.position or 0) - 1)
+                opt.save(update_fields=['position'])
+            elif action == 'down':
+                opt.position = (opt.position or 0) + 1
+                opt.save(update_fields=['position'])
+        # Return refreshed list
+        show_bin = request.GET.get('bin') == '1'
+        base_qs = OrganizationTypeOption.all_objects
+        opts = (base_qs.dead() if show_bin else base_qs.alive()).order_by('position', 'name')
+        html = render_to_string(
+            'app_0/widgets/_manage_list.html',
+            {
+                "title": "Manage Types",
+                "items": opts,
+                "add_url": None if show_bin else request.build_absolute_uri(
+                    request.path.replace('/manage/', '/new/')
+                ),
+                "show_bin": show_bin,
+                "site": site,
+                "org": org,
+            },
+            request=request,
+        )
+        return JsonResponse({"ok": True, "form": html})
+    else:
+        # Initial GET: return the management table/modal content
+        show_bin = request.GET.get('bin') == '1'
+        base_qs = OrganizationTypeOption.all_objects
+        opts = (base_qs.dead() if show_bin else base_qs.alive()).order_by('position', 'name')
+        html = render_to_string(
+            'app_0/widgets/_manage_list.html',
+            {
+                "title": "Manage Types",
+                "items": opts,
+                "add_url": None if show_bin else request.build_absolute_uri(
+                    request.path.replace('/manage/', '/new/')
+                ),
+                "show_bin": show_bin,
+                "site": site,
+                "org": org,
+            },
+            request=request,
+        )
+        return JsonResponse({"ok": True, "form": html})
+
+
+@login_required
+@require_http_methods(["GET"])
+def organization_settings_modal(request, site_id: int, org_id: int):
+    site = get_object_or_404(Site.objects.all(), pk=site_id)
+    org = get_object_or_404(Organization.objects.all(), pk=org_id, site=site)
+    if not (_is_site_admin(request.user, site) or _is_org_admin(request.user, site, org)):
+        return HttpResponseForbidden()
+    html = render_to_string('app_site/siteadmin/_org_settings.html', {"site": site, "org": org}, request=request)
+    return JsonResponse({"ok": True, "form": html})
+
 # ---------- Modal CRUD Endpoints ----------
 @login_required
 @require_http_methods(["GET", "POST"])
@@ -279,14 +582,13 @@ def org_list_bulk_admin(request, site_id: int):
         selected = request.POST.getlist('org_ids')
         if form.is_valid() and selected:
             user = form.cleaned_data['user']
-            active = form.cleaned_data['active']
             role = Role.objects.filter(code='orgadmin').first()
             if not role:
                 return JsonResponse({"ok": False, "error": "Role orgadmin missing"}, status=400)
             orgs = Organization.objects.filter(site=site, id__in=selected)
             for org in orgs:
                 mem, _ = Membership.objects.get_or_create(user=user, site=site, organization=org, role=role)
-                mem.active = active
+                mem.active = True
                 mem.save()
             return JsonResponse({"ok": True})
         html = render_to_string('app_site/siteadmin/_org_bulk_admin.html', {"form": form, "site": site, "orgs": Organization.objects.filter(site=site)}, request=request)

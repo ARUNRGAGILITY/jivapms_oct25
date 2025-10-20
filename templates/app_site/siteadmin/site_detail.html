@@ -25,7 +25,7 @@
     <a class="nav-link {% if active_tab == 'members' %}active{% endif %}" href="?tab=members" role="tab"><i class="fa-solid fa-users me-1"></i> Members</a>
   </li>
   <li class="nav-item" role="presentation">
-    <a class="nav-link {% if active_tab == 'organizations' %}active{% endif %}" href="?tab=organizations" role="tab"><i class="fa-solid fa-diagram-project me-1"></i> Organizations</a>
+    <a class="nav-link {% if active_tab == 'organizations' %}active{% endif %}" href="?tab=organizations" role="tab"><i class="fa-solid fa-building me-1"></i> Organizations</a>
   </li>
 </ul>
 
@@ -43,7 +43,7 @@
               <p class="text-muted">{% if desc %}{{ desc|truncatechars:120 }}{% else %}No description.{% endif %}</p>
             {% endwith %}
             <div class="d-flex gap-3 small">
-              <span><i class="fa-solid fa-diagram-project me-1"></i> {{ orgs|length }} organizations</span>
+              <span><i class="fa-solid fa-building me-1"></i> {{ orgs|length }} organizations</span>
               <span><i class="fa-solid fa-users me-1"></i> {{ members|length }} memberships</span>
             </div>
           </div>

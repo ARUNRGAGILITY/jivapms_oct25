@@ -13,6 +13,7 @@
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h1 class="h4 m-0"><i class="fa-solid fa-building-user me-2"></i>{{ org.name }}</h1>
   <div class="btn-group">
+    <a class="btn btn-outline-primary" href="{% url 'siteadmin_org_home' site.id org.id %}"><i class="fa-solid fa-folder-tree"></i> Home</a>
     <button class="btn btn-outline-secondary" data-modal-url="{% url 'siteadmin_org_edit_modal' site.id org.id %}"><i class="fa-regular fa-pen-to-square"></i> Edit</button>
     <button class="btn btn-primary" data-modal-url="{% url 'siteadmin_membership_new_modal' site.id %}?role_code=member&org_id={{ org.id }}"><i class="fa-solid fa-user-plus"></i> Add membership</button>
   </div>

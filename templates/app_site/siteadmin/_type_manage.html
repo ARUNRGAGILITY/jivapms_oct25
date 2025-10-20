@@ -1,0 +1,101 @@
+<div>
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <h6 class="m-0">Manage Types</h6>
+    <a href="#" class="btn btn-sm btn-outline-primary" data-modal-url="{% url 'siteadmin_org_type_new_modal' site.id org.id %}"><i class="fa-solid fa-plus"></i> Add</a>
+  </div>
+  <form id="typeManageForm">
+    {% csrf_token %}
+    <div class="table-responsive">
+      <table class="table table-sm align-middle">
+        <thead>
+          <tr>
+            <th style="width:36px;"><input type="checkbox" id="chkAll"></th>
+            <th style="width:60px;">#</th>
+            <th>Name</th>
+            <th style="width:110px;">Position</th>
+            <th style="width:110px;">Status</th>
+            <th style="width:220px;" class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for o in options %}
+          <tr class="{% if o.deleted %}text-muted{% endif %}">
+            <td><input type="checkbox" name="ids" value="{{ o.id }}" class="chkItem"></td>
+            <td>{{ forloop.counter }}</td>
+            <td class="fw-semibold">{{ o.name }}</td>
+            <td>
+              <div class="btn-group btn-group-sm" role="group">
+                <button class="btn btn-outline-secondary" data-action="up" data-id="{{ o.id }}" title="Up"><i class="fa-solid fa-arrow-up"></i></button>
+                <span class="btn btn-outline-light disabled">{{ o.position }}</span>
+                <button class="btn btn-outline-secondary" data-action="down" data-id="{{ o.id }}" title="Down"><i class="fa-solid fa-arrow-down"></i></button>
+              </div>
+            </td>
+            <td>
+              {% if o.deleted %}
+                <span class="badge bg-secondary">Deleted</span>
+              {% elif o.active %}
+                <span class="badge bg-success">Active</span>
+              {% else %}
+                <span class="badge bg-warning text-dark">Inactive</span>
+              {% endif %}
+            </td>
+            <td class="text-end">
+              <div class="btn-group btn-group-sm">
+                <button class="btn btn-outline-warning" data-action="toggle" data-id="{{ o.id }}" title="Toggle active"><i class="fa-solid fa-power-off"></i></button>
+                {% if not o.deleted %}
+                <button class="btn btn-outline-danger" data-action="delete" data-id="{{ o.id }}" title="Delete"><i class="fa-regular fa-trash-can"></i></button>
+                {% else %}
+                <button class="btn btn-outline-primary" data-action="restore" data-id="{{ o.id }}" title="Restore"><i class="fa-solid fa-rotate-left"></i></button>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="6" class="text-muted small">No types yet.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="d-flex justify-content-between align-items-center mt-2">
+      <div class="btn-group btn-group-sm">
+        <button class="btn btn-outline-danger" data-bulk="delete" type="button"><i class="fa-regular fa-trash-can me-1"></i>Delete selected</button>
+        <button class="btn btn-outline-primary" data-bulk="restore" type="button"><i class="fa-solid fa-rotate-left me-1"></i>Restore selected</button>
+      </div>
+    </div>
+  </form>
+</div>
+<script>
+  (function(){
+    const body = document.currentScript.closest('#modal-body');
+    const form = body.querySelector('#typeManageForm');
+    const chkAll = form.querySelector('#chkAll');
+    chkAll.addEventListener('change', ()=>{
+      form.querySelectorAll('.chkItem').forEach(ch => ch.checked = chkAll.checked);
+    });
+
+    async function post(action, ids){
+      const fd = new FormData(); fd.append('action', action);
+      if (Array.isArray(ids)) ids.forEach(id => fd.append('ids', id));
+      else if (ids) fd.append('id', ids);
+      const resp = await fetch(window.location.href, {method:'POST', headers:{'X-Requested-With':'XMLHttpRequest','X-CSRFToken': window.getCsrf()}, body: fd});
+      const data = await resp.json(); if (data && data.form) body.innerHTML = data.form;
+    }
+
+    // Row action buttons
+    body.addEventListener('click', (e)=>{
+      const btn = e.target.closest('button[data-action]');
+      if (!btn) return;
+      e.preventDefault();
+      post(btn.getAttribute('data-action'), btn.getAttribute('data-id'));
+    });
+    // Bulk buttons
+    body.addEventListener('click', (e)=>{
+      const bulk = e.target.closest('button[data-bulk]');
+      if (!bulk) return;
+      e.preventDefault();
+      const ids = Array.from(form.querySelectorAll('.chkItem:checked')).map(ch => ch.value);
+      if (ids.length === 0) return;
+      post(bulk.getAttribute('data-bulk'), ids);
+    });
+  })();
+</script>

@@ -1,0 +1,48 @@
+<form method="post">
+  {% csrf_token %}
+  <input type="hidden" name="tab" value="{{ tab }}"/>
+  <div class="mb-2 d-flex justify-content-between align-items-center">
+    <h6 class="m-0">Edit {{ tab|title }}</h6>
+    {% if tab == 'overview' %}
+      <a href="#" class="btn btn-sm btn-outline-secondary" data-modal-url="{% url 'siteadmin_org_type_manage_modal' site.id org.id %}"><i class="fa-solid fa-list"></i> Manage types</a>
+    {% endif %}
+  </div>
+  <div class="row g-3">
+    {% for sec, form in form_specs %}
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header py-2"><strong>{{ sec.title }}</strong></div>
+          <div class="card-body">
+            {% if tab == 'overview' and sec.title|lower == 'type' %}
+              {# render type form fields #}
+              {{ form.non_field_errors }}
+              <div class="mb-3">
+                <label class="form-label">Type</label>
+                {{ form.type_choice }}
+              </div>
+              <div class="mb-3" id="otherValueRow" {% if form.type_choice.value != 'Custom' %}style="display:none"{% endif %}>
+                <label class="form-label">Custom value</label>
+                {{ form.other_value }}
+              </div>
+              <script>
+                (function(){
+                  const body = document.currentScript.closest('form');
+                  const sel = body.querySelector('[name$="type_choice"]');
+                  const other = body.querySelector('#otherValueRow');
+                  function onChange(){ other.style.display = (sel.value === 'Custom') ? '' : 'none'; }
+                  sel.addEventListener('change', onChange); onChange();
+                })();
+              </script>
+            {% else %}
+              {{ form.non_field_errors }}
+              <div class="mb-0">{{ form.content }}</div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+  <div class="mt-3 d-flex justify-content-end">
+    <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk me-1"></i> Save</button>
+  </div>
+</form>
